@@ -23,8 +23,9 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   `Cahier de textes/TravailAFaire`, `Cahier de textes/Forums`,
   `Cahier de textes/Contenus/Vue hebdomadaire`, `Mes données/Documents`,
   `Mes données/Compte`, `Notes/Mes Notes`, `Notes/relevé`,
-  `Notes/Mon bulletin de notes`). Les noms de **fichiers** sont en ASCII
-  (`releve.js`, `bulletin.js`) car ils sont référencés dans `manifest.json`.
+  `Notes/Mon bulletin de notes`, `Notes/Bulletin de ma classe`). Les noms de
+  **fichiers** sont en ASCII (`releve.js`, `bulletin.js`, `bulletinclasse.js`) car ils
+  sont référencés dans `manifest.json`.
   Pattern commun à ces modules :
   1. **détection** de la page par une ancre stable (fil d'Ariane
      `h1#breadcrumbBandeau[aria-label="…"]`, sélecteur métier
@@ -50,8 +51,10 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   plus présente (`demark()`, drapeau pour éviter un scan par mutation,
   balayage forcé au boot car les modules re-s'exécutent après un
   rechargement de l'extension) et **unwrap** les `<b>` qu'il a insérés dans le
-  texte de PRONOTE. Voir `releve.js` / `bulletin.js`, deux pages Notes au DOM
-  identique.
+  texte de PRONOTE. Voir `releve.js`, `bulletin.js` et `bulletinclasse.js` : trois
+  pages Notes au DOM presque identique, chacune avec son ancre stricte et son préfixe
+  de classes (`pap-rlv-`, `pap-bul-`, `pap-bc-`) — un module ne dé-classe que ses
+  propres marques, jamais celles de ses voisines.
 - Chaque `css`/`js` doit être déclaré dans `manifest.json` dans `content_scripts`
   ET dans `web_accessible_resources` (fonts, PNG, SVG chargés via
   `chrome.runtime.getURL(...)`).

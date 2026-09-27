@@ -47,6 +47,10 @@ content/pronote/Notes/Mon bulletin de notes/  Page « Notes → Bulletins → Mo
                            partir du … ») + boutons du second menu. Fichiers en ASCII
                            (`bulletin.js` / `bulletin.css`). Bulletin publié non traité
                            (DOM inconnu tant qu'aucune période n'est publiée).
+content/pronote/Notes/Bulletin de ma classe/  Page « Notes → Bulletins → Bulletin de ma
+                           classe » : même traitement (carte d'état vide, icône `user.svg`,
+                           boutons du second menu), classes `pap-bc-*`. Fichiers en ASCII
+                           (`bulletinclasse.js` / `bulletinclasse.css`).
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -131,9 +135,17 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
 - `Notes/Mon bulletin de notes` : même DOM que `Notes/relevé` (mêmes `.Espace`, même
   `_PiedBull` masqué, même bloc `width:70rem` du graphe araignée) mais un **fil d'Ariane
   différent** (`aria-label="Mon bulletin de notes"`) → module dédié `bulletin.js` /
-  `bulletin.css` avec ses classes `pap-bul-*`, jamais `pap-rlv-*`. Les trois ancres
-  Notes restent mutuellement exclusives (égalité stricte pour `releve` et `bulletin`,
-  regex `/d[ée]tail de mes notes/i` pour `MesNotes`).
+  `bulletin.css` avec ses classes `pap-bul-*`, jamais `pap-rlv-*`. Les quatre ancres
+  Notes restent mutuellement exclusives (égalité stricte pour `releve`, `bulletin` et
+  `bulletinclasse`, regex `/d[ée]tail de mes notes/i` pour `MesNotes`).
+- `Notes/Bulletin de ma classe` : quasi identique au DOM de `Notes/Mon bulletin de
+  notes` (mêmes `.Espace`, même `.Espace.AlignementBas` + `_PiedBull` masqués, mais
+  **sans** le bloc `70rem` du graphe araignée, et la bande de filtres ne contient que le
+  sélecteur de période) → module dédié `bulletinclasse.js` / `bulletinclasse.css` avec
+  ses classes `pap-bc-*`. Le message d'attente est « Le bulletin de la classe sera publié
+  à partir du … » : l'icône est `assets/icons/user.svg` (pas `newspaper.svg`) pour
+  distinguer la page de « Mon bulletin de notes ». Ancre **égalité stricte** sur
+  `aria-label="Bulletin de ma classe"` — ne pas l'élargir en regex.
 - **Le `<main>` de PRONOTE est RÉUTILISÉ d'une page à l'autre** (et `#zone_fenetre`
   aussi) : une classe `pap-*` posée par un module reste collée quand on navigue
   ailleurs, et la feuille de style de l'ancienne page continue de s'appliquer. Tout
@@ -188,3 +200,10 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
    sélecteur de période : vérifier qu'il n'y a **plus de fente entre le second menu et
    le troisième menu** et que l'emplacement du bouton « Graphe araignée » masqué
    (`div.element-bandeau-wrapper[style*="visibility: hidden"]`) ne réserve plus de trou.
+9. Sur `Notes → Bulletins → Bulletin de ma classe` : mêmes vérifications que pour
+   « Mon bulletin de notes », avec l'icône `user` et le message « Le bulletin de la
+   classe sera publié à partir du … ». Test de fuite : enchaîner les trois pages
+   (`Relevé` → `Mon bulletin de notes` → `Bulletin de ma classe`) 2 fois ; en console,
+   `main` ne doit porter **qu'un seul** marqueur de page (`pap-rlv` OU `pap-bul` OU
+   `pap-bc`, jamais deux) et le `<div role="note">` une seule carte. Vérifier aussi que
+   la bande de filtres (sélecteur de période seule) est bien collée au second menu.
