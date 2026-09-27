@@ -18,6 +18,10 @@ la page de connexion **EduConnect** (`educonnect.education.gouv.fr`) et l'espace
 - **Espace PRONOTE (Élèves)** : bandeau dégradé avec logotype Papillon (logo PRONOTE/établissement
   masqué), menu principal avec icônes **Papicons**, widgets en cartes arrondies avec badges,
   emploi du temps et travail à faire restylés, pied de page épuré ;
+- **Pages PRONOTE couvertes** : accueil (widgets), Cahier de textes (Contenus, Travail à faire
+  en vue chronologique **et** hebdomadaire, Forums), Mes données (Compte, Documents),
+  Notes (Détail de mes notes, Relevé) — le relevé affiche une carte d'état vide tant que le
+  document n'est pas publié ;
 - **Mode sombre** réglable depuis les **paramètres de l'extension** (options : thème Clair / Sombre),
   appliqué à toutes les pages (connexions + PRONOTE).
 
@@ -36,7 +40,8 @@ manifest.json              Manifeste MV3 (options_ui, storage, content_script)
 content/portal/portal.js   Script de contenu : branding + thème + sélection des cartes (ENT)
 content/portal/portal.css  Thème Papillon (clair + sombre) pour la page de connexion ENT
 content/educonnect/        Content script + thème pour la page de connexion EduConnect
-content/pronote/           Content script + thème pour l'espace PRONOTE (accueil Élèves)
+content/pronote/           Content script + thème pour l'espace PRONOTE : accueil Élèves
+                           (widgets) puis une page par dossier — voir CLAUDE.md
 options/                   Page d'options (choix Clair / Sombre, stocké dans chrome.storage.sync)
 assets/brand/              Assets officiels Papillon (logotype, icônes)
 assets/icons/              Icônes Papicons (SVG, licence MIT) injectées dans l'espace PRONOTE
@@ -57,7 +62,7 @@ icons/                     Icônes d'extension
 ## Roadmap
 
 - [x] Espace PRONOTE : page d'accueil Élèves (bandeau, menu, widgets, emploi du temps, travail à faire).
-- [ ] Autres pages PRONOTE (notes, agenda, cahier de textes…) — même méthode : source de la page → restyle.
+- [ ] Autres pages PRONOTE (compétences, bilan, livrets) — même méthode : source de la page → restyle.
 - [ ] Élargir aux autres académies / portails Skolengo CAS (`*.ent.auvergnerhonealpes.fr` déjà visé).
 
 ## Note

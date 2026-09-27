@@ -1,0 +1,387 @@
+/* ============================================================
+   PAGE NOTES — « MON RELEVÉ DE NOTES » façon Papillon
+   Cible : page « Notes → Relevé » PRONOTE, repérée par son fil
+   d'Ariane h1#breadcrumbBandeau[aria-label="Mon relevé de notes"]
+   (la classe .pap-rlv est posée par releve.js sur le <main>).
+
+   Restyle purement visuel : le message d'attente devient une carte
+   vide Papillon à pointillés, le relevé publié s'affiche en quatre
+   colonnes arrondies défilantes, et les deux modales « Méthode de
+   calcul de la moyenne » prennent la charte. Le sélecteur de période
+   du troisième menu, les boutons d'enregistrement / PDF et
+   l'ouverture des modales restent natifs (déjà stylés par header.css
+   et pronote.css).
+   ============================================================ */
+
+/* ---------- Hauteur disponible ----------
+   Budget vertical calqué sur MesNotes : les deux barres sticky
+   mesurées par header.js, la bande de période (troisième menu) et
+   les marges de la page. */
+body.papillon-pronote main.interface_affV_client.pap-rlv {
+  --pap-rlv-h: calc(100vh - var(--pap-menu-h, 60px) - var(--pap-second-h, 54px) - 96px);
+}
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → forcer le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-rlv, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-rlv) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-rlv {
+  background-color: transparent !important;
+}
+
+/* PRONOTE pose un height:100% inline sur le DIV qui enveloppe les
+   deux .Espace de la page : sans cela la carte vide ne peut pas
+   occuper la hauteur disponible. */
+body.papillon-pronote main.interface_affV_client.pap-rlv > div[style*="height"] {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-rlv .Espace {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ============================================================
+   2. Carte d'état vide
+   PRONOTE n'affiche qu'un <p> centré ; on l'encadre en carte
+   pointillée centrée verticalement dans la page. La classe
+   .pap-rlv-empty est posée par releve.js sur le <div role="note">.
+   ============================================================ */
+body.papillon-pronote .pap-rlv-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  min-height: var(--pap-rlv-h) !important;
+  margin: 10px 12px 14px !important;
+  padding: 26px 18px !important;
+  border: 1.5px dashed var(--papillon-border, #e7efee) !important;
+  border-radius: 25px !important;
+  background: var(--papillon-surface, #ffffff) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+}
+
+body.papillon-pronote .pap-rlv-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  color: #c8d6d1 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .pap-rlv-empty-icon svg {
+  width: 48px !important;
+  height: 48px !important;
+  fill: currentColor !important;
+}
+
+/* Le <p> natif porte .p-y-xl / .m-bottom-l / .text-center : on
+   annule ces utilitaires pour laisser la carte gérer l'espacement. */
+body.papillon-pronote .pap-rlv-empty > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: var(--papillon-text, #10130f) !important;
+}
+
+body.papillon-pronote .pap-rlv-empty-date {
+  display: inline-block !important;
+  margin-left: 4px !important;
+  padding: 2px 10px !important;
+  border-radius: 300px !important;
+  background: #eaf7f4 !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #227e6b !important;
+  white-space: nowrap !important;
+}
+
+/* ============================================================
+   3. Relevé publié — quatre colonnes
+   div.Espace.AlignementBas (marqué .pap-rlv-cols) contient
+   #…_PiedBull puis quatre div.EspaceBas en height:100% inline.
+   ⚠ releve.js ne pose .pap-rlv-cols QUE si le conteneur est
+   visible ET rempli (sinon PRONOTE le garde en display:none et le
+   display:flex ci-dessous afficherait quatre bulles vides sous
+   l'état vide). Ne pas retirer ce garde-fou du JS.
+   L'intérieur du bulletin (tableau, en-tête) n'est pas encore connu
+   → à restyler d'après un relevé publié.
+   ============================================================ */
+body.papillon-pronote .pap-rlv-cols {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 10px 12px 14px !important;
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-rlv-cols > div[id$="_PiedBull"] {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+body.papillon-pronote .pap-rlv-cols .EspaceBas {
+  flex: 1 1 0 !important;
+  min-width: 190px !important;
+  box-sizing: border-box !important;
+  /* height:100% inline → hauteur pilotée par le budget vertical */
+  height: auto !important;
+  max-height: var(--pap-rlv-h) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  border: 1px solid #e7efee !important;
+  border-radius: 25px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .06) !important;
+}
+
+/* ============================================================
+   4. Modales « Méthode de calcul de la moyenne »
+   Rendues dans #zone_fenetre, hors de <main> : marquées
+   .pap-rlv-fenetre par releve.js.
+   ============================================================ */
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Cadre {
+  box-sizing: border-box !important;
+  width: min(600px, calc(100vw - 40px)) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #e7efee !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 18px 48px rgba(16, 19, 15, .22) !important;
+  overflow: hidden !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Titre {
+  padding: 14px 16px !important;
+  background: transparent !important;
+  border-bottom: 1px solid #e7efee !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Titre h1 {
+  margin: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  color: #10130f !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur {
+  gap: 4px !important;
+  padding: 8px 10px !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImageIcon,
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImage {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  transition: background-color .15s ease, border-color .15s ease !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImageIcon:hover,
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImage:hover {
+  background: #f2f6f5 !important;
+  border-color: #e7efee !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur svg,
+body.papillon-pronote .pap-rlv-fenetre .cta-conteneur svg path {
+  fill: #5d6b66 !important;
+  stroke: #5d6b66 !important;
+}
+
+/* PRONOTE pose min-width:600px inline sur .Fenetre_Contenu : sans
+   cette remise à zéro, la modale déborde sur les petits écrans. */
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Espace,
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Contenu {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: auto !important;
+  padding: 14px 16px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #10130f !important;
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .Fenetre_Contenu table {
+  width: 100% !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  color: inherit !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .zone-bas {
+  padding: 10px 12px 12px !important;
+  background: transparent !important;
+  border-top: 1px solid #e7efee !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .zone-bas .themeBoutonSecondaire {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #227e6b !important;
+  background: transparent !important;
+  border: 1px solid #35bba0 !important;
+  border-radius: 300px !important;
+  padding: 8px 18px !important;
+  transition: background-color .15s ease, color .15s ease !important;
+}
+
+body.papillon-pronote .pap-rlv-fenetre .zone-bas .themeBoutonSecondaire:hover {
+  background: #35bba0 !important;
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   5. Boutons du second menu (enregistrer / PDF)
+   Ils sont désactivés tant que le relevé n'est pas publié : on les
+   pose en cercles fantômes pour qu'ils ne cassent pas la barre.
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième contient
+   la bannière rouge « Consultation temporaire » que PRONOTE masque
+   avec style="display:none", et un display:flex !important ici la
+   ferait réapparaître. On n'agit donc que sur les <i> de bouton,
+   déjà visibles, et sur leurs SVG.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImageDisable {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 1px solid #e7efee !important;
+  opacity: .5 !important;
+  transition: background-color .15s ease, opacity .15s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #f2f6f5 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes svg path {
+  fill: #5d6b66 !important;
+  stroke: #5d6b66 !important;
+}
+
+/* ============================================================
+   6. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-empty {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-empty > p {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-empty-date {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-cols .EspaceBas {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .Fenetre_Cadre {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .55) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .Fenetre_Titre,
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .zone-bas {
+  border-color: #2a3531 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .Fenetre_Titre h1,
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .Fenetre_Contenu {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImageIcon:hover,
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .cta-conteneur .btnImage:hover {
+  background: #202926 !important;
+  border-color: #2a3531 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .cta-conteneur svg,
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .cta-conteneur svg path,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes svg,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes svg path {
+  fill: #93a79f !important;
+  stroke: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImageDisable {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-rlv) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #202926 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .zone-bas .themeBoutonSecondaire {
+  color: #6fd7c1 !important;
+  border-color: #35bba0 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-rlv-fenetre .zone-bas .themeBoutonSecondaire:hover {
+  background: #35bba0 !important;
+  color: #0d1512 !important;
+}

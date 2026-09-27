@@ -21,7 +21,7 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   `content/pronote/<rubrique>/<page>/<page>.{css,js}` (`Cahier de textes/Contenus`,
   `Cahier de textes/TravailAFaire`, `Cahier de textes/Forums`,
   `Cahier de textes/Contenus/Vue hebdomadaire`, `Mes données/Documents`,
-  `Mes données/Compte`). Pattern commun à ces modules :
+  `Mes données/Compte`, `Notes/Mes Notes`, `Notes/relevé`). Pattern commun à ces modules :
   1. **détection** de la page par une ancre stable (fil d'Ariane
      `h1#breadcrumbBandeau[aria-label="…"]`, sélecteur métier
      `.ObjetListe.DonneesListe_RessourceMatiere`, `#conteneur-page.Timeline`) ;

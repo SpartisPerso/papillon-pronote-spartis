@@ -37,6 +37,10 @@ content/pronote/Cahier de textes/<page>/   Pages CDT (Contenus, TravailAFaire, F
 content/pronote/Mes données/<page>/        Pages Compte, Documents
 content/pronote/Notes/Mes Notes/           Page « Détail de mes notes » : carte Moyennes
                            (graphique SVG de l'historique des moyennes) + cartes de notes
+content/pronote/Notes/relevé/             Page « Notes → Relevé » : carte d'état vide
+                           (message « sera publié à partir du … ») + colonnes du bulletin
+                           + modales « Méthode de calcul de la moyenne ». Fichiers en ASCII
+                           (`releve.js` / `releve.css`) pour les chemins du manifest.
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -104,6 +108,17 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   l'ordre d'affichage.
 - Le thème est relu en direct via `chrome.storage.onChanged` ; re-tester la bascule
   Clair ↔ Sombre après chaque modification.
+- `Notes/relevé` : l'ancre est l'**égalité stricte** de `h1#breadcrumbBandeau[aria-label]`
+  sur `"Mon relevé de notes"` — elle ne matche pas la regex `/d[ée]tail de mes notes/i` de
+  `MesNotes.js`, donc les deux pages restent mutuellement exclusives. Ne pas élargir l'une
+  des deux ancres, sinon les deux modules se marquent en même temps.
+- `Notes/relevé` : tant que le relevé n'est pas publié, PRONOTE n'affiche qu'un
+  `<div role="note">` et laisse le bulletin (`div.Espace.AlignementBas` + 4 `div.EspaceBas`)
+  en `display:none` et vide. Seul l'état vide est donc restylé à fond ; l'intérieur du
+  bulletin reste natif, à faire après un relevé publié (même logique que les colonnes du
+  relevé). Ne pas confondre le `role="note"` de l'état vide avec celui de la bannière
+  « Consultation temporaire » du second menu : le sélecteur est scopé à `main`.
+
 
 ## Test manuel (avant de considérer une tâche terminée)
 
@@ -117,3 +132,8 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
    « Par matière », sélectionner un devoir (panneau de détail) et survoler le graphique —
    pas de doublon, la courbe suit bien la période.
 6. Changer le thème depuis les Options : l'UI se recolorise sans recharge.
+7. Sur `Notes → Relevé` : vérifier la carte d'état vide (icône + date en pastille), changer
+   de période (le message peut changer de date) et sortir/revenir sur la page — pas de
+   doublon d'icône. Les deux modales « Méthode de calcul de la moyenne » ne sont
+   observables qu'une fois le relevé publié : vérifier alors au minimum que la classe
+   `pap-rlv-fenetre` est bien posée (console) et que la modale ne déborde pas.
