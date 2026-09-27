@@ -235,16 +235,20 @@ body.papillon-pronote nav.objetBandeauEntete_thirdmenu:not(.sr-only):has(*) {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 6px !important;
-  padding: 8px 16px !important;
-  margin-top: 8px !important;
+  padding: 7px 16px !important;
+  margin-top: 0 !important;
   background: #fff !important;
   border-bottom: 1px solid #e7efee !important;
   color: #10130f !important;
   /* La bande de filtres est sticky SOUS le second menu : elle doit
      suivre le scroll sans passer derrière la barre sticky du titre
      (qui porte z-index:980). --pap-second-h est mesuré en JS et ne
-     descend jamais sous 54px. Le margin-top:8px laisse un filet d'air
-     entre les deux barres (en flow comme quand elles sont collées). */
+     descend jamais sous 54px.
+     ⚠ Pas de margin-top ici : les deux barres sont collées, et le
+     second menu pose déjà sa bordure basse. Un espace entre les deux
+     laissait une fente blanche de 8px par laquelle le contenu de la
+     page passait au scroll — visible sur les pages dont la bande ne
+     contient qu'un sélecteur de période (Notes → Mon bulletin). */
   position: sticky !important;
   top: calc(var(--pap-menu-h, 60px) + var(--pap-second-h, 54px)) !important;
   z-index: 970 !important;
@@ -260,6 +264,18 @@ body.papillon-pronote .objetBandeauEntete_thirdmenu:not(.sr-only) .element-bande
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
+}
+/* PRONOTE masque certains blocs de la bande avec visibility:hidden en
+   ligne (ex. le bouton « Graphe araignée » quand la période n'a pas de
+   bulletin) : la boîte reste dans le flux de la barre flex et lui
+   réserve un emplacement vide à droite. On la retire — le bloc est
+   DÉJÀ invisible, donc aucun comportement natif n'est touché, et le
+   style inline suffit à le faire revenir dès que PRONOTE réaffiche le
+   bloc. Cible le style inline (jamais une classe) : l'attribut
+   visibility suffit et l'id du bloc change d'une page à l'autre. */
+body.papillon-pronote .objetBandeauEntete_thirdmenu:not(.sr-only) .element-bandeau-wrapper[style*="visibility: hidden"],
+body.papillon-pronote .objetBandeauEntete_thirdmenu:not(.sr-only) .element-bandeau-wrapper[style*="visibility:hidden"] {
+  display: none !important;
 }
 body.papillon-pronote .objetBandeauEntete_thirdmenu:not(.sr-only) .objetBandeauEntete_fullsize {
   flex: 1 1 auto !important;
