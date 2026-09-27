@@ -16,12 +16,16 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   `content/portal/` (page ENT), `content/educonnect/` (page EduConnect),
   `content/pronote/accueil/` (espace PRONOTE).
 - Chaque widget PRONOTE vit dans `content/pronote/accueil/elements/<nom>/<nom>.{css,js}`
-  (header, edt, tav, grades, viescolaire, informations, ressources).
+  (header, edt, tav, grades, viescolaire, informations, ressources, deconnexion,
+  devoirsurveille).
 - Chaque **page** PRONOTE (hors accueil) vit dans son propre dossier
   `content/pronote/<rubrique>/<page>/<page>.{css,js}` (`Cahier de textes/Contenus`,
   `Cahier de textes/TravailAFaire`, `Cahier de textes/Forums`,
   `Cahier de textes/Contenus/Vue hebdomadaire`, `Mes données/Documents`,
-  `Mes données/Compte`, `Notes/Mes Notes`, `Notes/relevé`). Pattern commun à ces modules :
+  `Mes données/Compte`, `Notes/Mes Notes`, `Notes/relevé`,
+  `Notes/Mon bulletin de notes`). Les noms de **fichiers** sont en ASCII
+  (`releve.js`, `bulletin.js`) car ils sont référencés dans `manifest.json`.
+  Pattern commun à ces modules :
   1. **détection** de la page par une ancre stable (fil d'Ariane
      `h1#breadcrumbBandeau[aria-label="…"]`, sélecteur métier
      `.ObjetListe.DonneesListe_RessourceMatiere`, `#conteneur-page.Timeline`) ;
@@ -39,6 +43,15 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   classes depuis un module JS par page (seule l'ancre
   `h1#breadcrumbBandeau[aria-label]` change) et on **ne duplique pas** la
   feuille de style, déclarée une seule fois dans `manifest.json`.
+- **Conteneur de page réutilisé → dé-classement hors page obligatoire** :
+  PRONOTE recycle le `<main>` et `#zone_fenetre` d'une page à l'autre, donc
+  une classe `pap-*` (et la feuille de style qui l'utilise) survit à la
+  navigation. Tout module de page dé-classe ses marques quand son ancre n'est
+  plus présente (`demark()`, drapeau pour éviter un scan par mutation,
+  balayage forcé au boot car les modules re-s'exécutent après un
+  rechargement de l'extension) et **unwrap** les `<b>` qu'il a insérés dans le
+  texte de PRONOTE. Voir `releve.js` / `bulletin.js`, deux pages Notes au DOM
+  identique.
 - Chaque `css`/`js` doit être déclaré dans `manifest.json` dans `content_scripts`
   ET dans `web_accessible_resources` (fonts, PNG, SVG chargés via
   `chrome.runtime.getURL(...)`).

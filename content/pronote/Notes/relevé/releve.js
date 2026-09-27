@@ -30,6 +30,17 @@
    repérée par une égalité stricte sur « Mon relevé de notes », qui
    ne matche pas la regex /^d[ée]tail de mes notes/i de MesNotes.js.
    Les deux pages restent donc mutuellement exclusives.
+
+   PIÈGE — le DOM est IDENTIQUE à celui de « Mon bulletin de notes »
+   (mêmes .Espace, même #…_PiedBull masqué) et PRONOTE RÉUTILISE le
+   <main> et le #zone_fenetre d'une page à l'autre : les classes
+   restent donc collées quand on navigue ailleurs. processAll()
+   dé-classe tout via demark() dès que onPage() est faux — ne pas
+   supprimer cette branche, sinon releve.css s'applique sur la page
+   voisine (fond de page, boutons du second menu…). Le drapeau
+   `marked` évite un scan DOM sur chaque mutation, d'où le balayage
+   FORCÉ au boot (après un rechargement de l'extension, les modules
+   re-s'exécutent sur un DOM déjà marqué, drapeau encore à false).
    ============================================================ */
 
 (() => {
@@ -194,8 +205,60 @@
     }
   }
 
-  function processAll() {
-    if (!onPage()) return;
+  /* Rastitue la <b> de date : on remet le texte à plat pour laisser
+     le DOM PRONOTE tel qu'il était. */
+  function unwrapDate(note) {
+    const b = note.querySelector('.pap-rlv-empty-date');
+    if (!b) return;
+    b.replaceWith(document.createTextNode(b.textContent));
+  }
+
+  /* Hors de la page : on retire nos marques. PRONOTE RÉUTILISE le
+     <main> et le #zone_fenetre d'une page à l'autre (le DOM est
+     identique pour « Mon bulletin de notes », cf. bulletin.js) : sans
+     ce dé-classement, .pap-rlv reste collé sur la page voisine et
+     releve.css continue de s'y appliquer (fond de page, boutons du
+     second menu…). Le drapeau évite de reparcourir le DOM sur toutes
+     les pages Notes, sauf au boot où le balayage est forcé. */
+  let marked = false;
+
+  function demark(force) {
+    if (!force && !marked) return;
+    marked = false;
+
+    const main = document.querySelector('main.interface_affV_client');
+    if (main) {
+      main.classList.remove('pap-rlv');
+      delete main.dataset.papRlv;
+    }
+
+    document.querySelectorAll('main.interface_affV_client .Espace.AlignementBas').forEach((el) => {
+      el.classList.remove('pap-rlv-cols');
+      delete el.dataset.papRlvCols;
+    });
+
+    document.querySelectorAll('main.interface_affV_client .Espace > [role="note"]').forEach((note) => {
+      if (!note.classList.contains('pap-rlv-empty')) return;
+      unwrapDate(note);
+      const ico = note.querySelector('.pap-rlv-empty-icon');
+      if (ico) ico.remove();
+      note.classList.remove('pap-rlv-empty');
+      delete note.dataset.papRlvEmpty;
+    });
+
+    document.querySelectorAll('#zone_fenetre .ObjetFenetre_Espace[class*="ObjetFenetre_MethodeCalculMoyenne"],' +
+      '#zone_fenetre .ObjetFenetre_Espace[class*="ObjetFenetre_MoyenneTableauResultats"]').forEach((el) => {
+      el.classList.remove('pap-rlv-fenetre');
+      delete el.dataset.papRlvFenetre;
+    });
+  }
+
+  function processAll(force) {
+    if (!onPage()) {
+      demark(force);
+      return;
+    }
+    marked = true;
     markPage();
     markBulletin();
     markFenetre();
@@ -204,7 +267,8 @@
 
   function init() {
     Promise.all(Object.keys(ICON_FILES).map((k) => loadIcon(k))).then(() => {
-      processAll();
+      /* Balayage initial forcé : le <main> peut déjà porter un résidu */
+      processAll(true);
 
       /* Recapter les re-rendus de PRONOTE (changement de période,
          publication du relevé, ouverture d'une modale) */

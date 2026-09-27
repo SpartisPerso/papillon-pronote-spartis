@@ -29,8 +29,9 @@ automatiquement quand la tâche touche `content/`, `styles/` ou `options/`).
 content/portal/            Content script + thème de la page ENT (portal.css/js)
 content/educonnect/        Content script + thème de la page EduConnect
 content/pronote/accueil/   Espace PRONOTE — script CSS sous pronote.css + pronote.js (bootstrap)
-  éléments/<nom>/          Un dossier .css + .js par widget (header, edt, tav, grades,
-                           viescolaire, informations, ressources)
+  elements/<nom>/          Un dossier .css + .js par widget (header, edt, tav, grades,
+                           viescolaire, informations, ressources, deconnexion,
+                           devoirsurveille) — dossier ASCII `elements` (sans accent)
 content/pronote/Cahier de textes/<page>/   Pages CDT (Contenus, TravailAFaire, Forums)
   Vue hebdomadaire/        Vue hebdo de Contenus **et** TravailAFaire
                            (1 .js par page, CSS commun voir ci-dessous)
@@ -41,6 +42,11 @@ content/pronote/Notes/relevé/             Page « Notes → Relevé » : carte 
                            (message « sera publié à partir du … ») + colonnes du bulletin
                            + modales « Méthode de calcul de la moyenne ». Fichiers en ASCII
                            (`releve.js` / `releve.css`) pour les chemins du manifest.
+content/pronote/Notes/Mon bulletin de notes/  Page « Notes → Bulletins → Mon bulletin de
+                           notes » : carte d'état vide (« Le bulletin sera publié à
+                           partir du … ») + boutons du second menu. Fichiers en ASCII
+                           (`bulletin.js` / `bulletin.css`). Bulletin publié non traité
+                           (DOM inconnu tant qu'aucune période n'est publiée).
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -73,9 +79,12 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
 
 ## Pièges connus
 
-- `adjust(hex, pct)` et `svgWrap(...)` sont redéfinis dans chaque module `elements/`
-  (tav, edt, grades, informations, viescolaire) — suivre la même signature.
-  `normalizeSubject`/`EMOJI_MAP` (matières → émoji) n'existent que dans `tav.js`.
+- `adjust(hex, pct)` et `svgWrap(...)` sont redéfinis dans chaque module qui en a
+  besoin (tav, edt, grades, ressources, devoirsurveille, TravailAFaire + sa vue
+  hebdomadaire ; `svgWrap` en plus dans informations, viescolaire, Documents,
+  MesNotes, relevé, bulletin) — suivre la même signature.
+  `normalizeSubject`/`EMOJI_MAP` (matières → émoji) existent dans `tav.js`,
+  `grades.js` **et** `MesNotes.js` (copie locale, même logique).
 - `Contenus.js` et `TravailAFaire.js` **sortent tôt** (`.DonneesListe_RessourceMatiere`
   absente) en **vue hebdomadaire** : leurs classes ne sont pas posées du tout. Ce sont
   `Cahier de textes/<page>/Vue hebdomadaire/VueHebdomadaire.js` qui la marquent, via le
@@ -113,11 +122,43 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   `MesNotes.js`, donc les deux pages restent mutuellement exclusives. Ne pas élargir l'une
   des deux ancres, sinon les deux modules se marquent en même temps.
 - `Notes/relevé` : tant que le relevé n'est pas publié, PRONOTE n'affiche qu'un
-  `<div role="note">` et laisse le bulletin (`div.Espace.AlignementBas` + 4 `div.EspaceBas`)
-  en `display:none` et vide. Seul l'état vide est donc restylé à fond ; l'intérieur du
-  bulletin reste natif, à faire après un relevé publié (même logique que les colonnes du
-  relevé). Ne pas confondre le `role="note"` de l'état vide avec celui de la bannière
-  « Consultation temporaire » du second menu : le sélecteur est scopé à `main`.
+  `<div role="note">` et laisse le bulletin (`div.Espace.AlignementBas` + les
+  `.EspaceBas` de `#…_PiedBull`) en `display:none` et vide. Seul l'état vide est donc
+  restylé à fond ; l'intérieur du bulletin reste natif, à faire après un relevé publié
+  (même logique que les colonnes du relevé). Ne pas confondre le `role="note"` de l'état
+  vide avec celui de la bannière « Consultation temporaire » du second menu : le
+  sélecteur est scopé à `main`.
+- `Notes/Mon bulletin de notes` : même DOM que `Notes/relevé` (mêmes `.Espace`, même
+  `_PiedBull` masqué, même bloc `width:70rem` du graphe araignée) mais un **fil d'Ariane
+  différent** (`aria-label="Mon bulletin de notes"`) → module dédié `bulletin.js` /
+  `bulletin.css` avec ses classes `pap-bul-*`, jamais `pap-rlv-*`. Les trois ancres
+  Notes restent mutuellement exclusives (égalité stricte pour `releve` et `bulletin`,
+  regex `/d[ée]tail de mes notes/i` pour `MesNotes`).
+- **Le `<main>` de PRONOTE est RÉUTILISÉ d'une page à l'autre** (et `#zone_fenetre`
+  aussi) : une classe `pap-*` posée par un module reste collée quand on navigue
+  ailleurs, et la feuille de style de l'ancienne page continue de s'appliquer. Tout
+  module de page doit donc **dé-classer ses marques hors de sa page** : `processAll()`
+  appelle `demark()` quand `onPage()` est faux, avec un drapeau `marked` pour ne pas
+  reparcourir le DOM à chaque mutation, et un **balayage forcé au boot** (`processAll(true)`)
+  car après un rechargement de l'extension les modules re-s'exécutent sur un DOM déjà
+  marqué (drapeau encore à `false`). `demark()` dépose aussi la classe et **unwrap** la
+  `<b>` de date qu'il avait insérée dans le texte de PRONOTE.
+- **Le second menu et le troisième menu doivent rester collés** : les deux barres sont
+  `position: sticky` (`top` = `--pap-menu-h` puis `--pap-menu-h + --pap-second-h`,
+  mesurés par `header.js`). Ne surtout pas remettre de `margin-top` sur
+  `nav.objetBandeauEntete_thirdmenu` : la fente blanche qui en résulte laisse passer le
+  contenu de la page au scroll, et elle est très visible sur les pages dont la bande ne
+  contient qu'un sélecteur de période (`Notes/Mon bulletin de notes`).
+- Les blocs que PRONOTE masque avec `visibility: hidden` en ligne (bouton « Graphe
+  araignée » du troisième menu, `div.element-bandeau-wrapper`) **réservent leur boîte**
+  dans la barre flex : on les retire au CSS via `[style*="visibility: hidden"]` (c'est
+  déjà invisible, donc aucun comportement touché). Viser le style inline, jamais l'`id`
+  de ces blocs : il change d'une page à l'autre (`id_154_bandzone_2` sur Mon bulletin,
+  `id_216_bandzone_2` ailleurs).
+- `Notes/Mon bulletin de notes` : le `<main>` contient **deux** `<div role="note">` —
+  celui de l'état vide (parent direct `.Espace`) et celui du bloc `70rem` du graphe
+  araignée (parent `.interface_affV`, `<p>` vide). Le sélecteur de l'état vide est donc
+  scopé à `.Espace > [role="note"]` + test `/bulletin/i` sur le `<p>`.
 
 
 ## Test manuel (avant de considérer une tâche terminée)
@@ -137,3 +178,13 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
    doublon d'icône. Les deux modales « Méthode de calcul de la moyenne » ne sont
    observables qu'une fois le relevé publié : vérifier alors au minimum que la classe
    `pap-rlv-fenetre` est bien posée (console) et que la modale ne déborde pas.
+8. Sur `Notes → Bulletins → Mon bulletin de notes` : même vérifications que pour le
+   Relevé (carte d'état vide, icône `newspaper`, date en pastille), **plus** le test de
+   fuite : aller sur `Relevé`, revenir sur `Mon bulletin de notes` et vice-versa 2 fois —
+   en console, `main` ne doit porter **que** `pap-bul` (jamais `pap-rlv`, ni
+   `data-pap-rlv`). Vérifier aussi que la bannière « Consultation temporaire » masquée
+   (`li[style*="display: none"]`) n'est pas révélée, et que le bloc `70rem` du graphe
+   araignée reste masqué. Sur cette page la bande de filtres ne contient que le
+   sélecteur de période : vérifier qu'il n'y a **plus de fente entre le second menu et
+   le troisième menu** et que l'emplacement du bouton « Graphe araignée » masqué
+   (`div.element-bandeau-wrapper[style*="visibility: hidden"]`) ne réserve plus de trou.
