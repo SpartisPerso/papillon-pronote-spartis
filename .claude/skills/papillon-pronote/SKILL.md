@@ -23,9 +23,9 @@ ou restyle doit respecter ces règles pour rester cohérent avec le reste du rep
   `Cahier de textes/TravailAFaire`, `Cahier de textes/Forums`,
   `Cahier de textes/Contenus/Vue hebdomadaire`, `Mes données/Documents`,
   `Mes données/Compte`, `Notes/Mes Notes`, `Notes/relevé`,
-  `Notes/Mon bulletin de notes`, `Notes/Bulletin de ma classe`). Les noms de
-  **fichiers** sont en ASCII (`releve.js`, `bulletin.js`, `bulletinclasse.js`) car ils
-  sont référencés dans `manifest.json`.
+  `Notes/Mon bulletin de notes`, `Notes/Bulletin de ma classe`, `Notes/Anciens bulletins`).
+  Les noms de **fichiers** sont en ASCII (`releve.js`, `bulletin.js`, `bulletinclasse.js`,
+  `anciensbulletins.js`) car ils sont référencés dans `manifest.json`.
   Pattern commun à ces modules :
   1. **détection** de la page par une ancre stable (fil d'Ariane
      `h1#breadcrumbBandeau[aria-label="…"]`, sélecteur métier

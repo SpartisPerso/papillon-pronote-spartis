@@ -51,6 +51,13 @@ content/pronote/Notes/Bulletin de ma classe/  Page « Notes → Bulletins → Bu
                            classe » : même traitement (carte d'état vide, icône `user.svg`,
                            boutons du second menu), classes `pap-bc-*`. Fichiers en ASCII
                            (`bulletinclasse.js` / `bulletinclasse.css`).
+content/pronote/Notes/Anciens bulletins/     Page « Notes → Bulletins → Anciens bulletins » :
+                           l'ARBRE des bulletins déjà publiés (année + trimestres) en carte
+                           Papillon (lignes arrondies, icône `calendar` / `newspaper` par
+                           ligne, chevron de dépliage teal, libellé `.sr-only` révélé en
+                           titre de carte) + la POP-UP de dépôt du PDF
+                           (`.ObjetFenetre_SelectionClouds_racine`). Classes `pap-ab-*`.
+                           Fichiers en ASCII (`anciensbulletins.js` / `.css`).
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -146,6 +153,54 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   à partir du … » : l'icône est `assets/icons/user.svg` (pas `newspaper.svg`) pour
   distinguer la page de « Mon bulletin de notes ». Ancre **égalité stricte** sur
   `aria-label="Bulletin de ma classe"` — ne pas l'élargir en regex.
+- `Notes/Anciens bulletins` : **seule** page Notes qui affiche une vraie LISTE
+  (`.ObjetListe` `DonneesListe_BIA`, arbre `role="tree"`, lignes `.fd_ligne[data-colonne]`)
+  et non un message d'attente. PRONOTE y fige des largeurs inline (`max-width:45rem` sur le
+  wrapper, `width:496px` sur `.liste_zone`, `grid-template-columns:479px` sur
+  `.liste_content_lignes`, `width:478px` sur `.liste_contenu_ligne`) et une hauteur fixe
+  (`height:40px`, ajustée au nombre de lignes) sur le viewport `#…_Zone_1` → les remplacer
+  (`minmax(0,1fr)`, `max-height: var(--pap-ab-h)`), sinon la carte reste étroite et la liste
+  déborde sous le bas de l'écran. Le wrapper `max-width:45rem` qui contient la carte **n'est
+  pas forcément un enfant direct du `<main>`** : l'élargir via
+  `main….pap-ab div[style*="max-width"]:has(.pap-ab-list)` (et non `>` seulement).
+  ⚠ Cette page n'a **aucun titre visible** : le libellé « Anciens bulletins » est un
+  `span.sr-only[id$="_labelListe"]` posé en FIN de liste (servant à l'`aria-labelledby` de la
+  grille), pas un `p.liste_enteteTxt` → c'est le JS qui l'injecte en `.pap-ab-title` dans
+  `.liste_btnentete` (avec un `.pap-ab-count` et une `.pap-ab-trim` « T1 » par trimestre). Ancre
+  **égalité stricte** sur `aria-label="Anciens bulletins"`. Le troisième menu y est **vide et
+  masqué** (`nav#ligne_bandeau` en `display:none`) : ne jamais le styler.
+- ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
+  compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
+  l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
+  tester `if (el.textContent !== txt)` avant d'écrire.
+- **Sur les listes en arbre, `role="treeitem"`, `aria-level` et `aria-selected` sont sur le
+  div INTÉRIEUR de la ligne** (`.liste_contenu_cellule`), pas sur `.fd_ligne` (qui ne porte
+  qu'un `data-colonne`). Conséquence : `.fd_ligne[role="treeitem"]` ne matche RIEN, et pour
+  colorer la ligne sélectionnée il faut `:has([role="treeitem"][aria-selected="true"])` —
+  la classe `.selected`, elle, est bien sur `.fd_ligne`.
+- **Le fil d'Ariane peut être modifié EN PLACE** (même `<h1>`, `aria-label` réécrit) : les
+  observateurs `childList` ne le voient pas, et les marques de l'ancienne page restent
+  collées. `anciensbulletins.js` observe donc `#breadcrumbBandeau`
+  (`attributeFilter: ['aria-label']`) et ré-attache son observateur quand PRONOTE remplace
+  le nœud (`watchBreadcrumb()`).
+- **Les boutons d'action du second menu (Enregistrer, Générer le PDF) sont des
+  `<i class="btnImage">`** : ni `<a>`, ni `<button>`, ni `[role=button]`. La règle globale
+  de `header.css` ne les touche donc pas, et ils restent invisibles. Chaque page qui en a
+  doit donc styler SON PROPRE bloc `.menu-commandes .btnImage` scopé à `:has(.pap-xx)`
+  (pastille `#f1f1f1` / bordure `#e7efee`, icône `currentColor`, survol `#ddf2ec` +
+  `#157a63`, désactivés estompés). Et ne jamais styler les `<li>` du menu : le troisième
+  porte la bannière « Consultation temporaire » que PRONOTE masque en `display:none`.
+- `Notes/Anciens bulletins` — **pop-up de dépôt du PDF** : rendue dans `#zone_fenetre`, donc
+  hors du `<main>`, et réutilisée comme lui → `demark()` doit passer par les classes
+  `pap-ab-*` (pas par un sélecteur de page) et la marquer via `markFenetre()`. Racine :
+  `.ObjetFenetre_SelectionClouds_racine` → `.pap-ab-fenetre` (+ `pap-ab-cloud` par ligne de
+  cloud, `pap-ab-cloud-hint` pour la phrase d'invite). Style : même recette que la fiche CDT
+  (`.pap-vh-fiche`) — variables `--pap-ab-fiche-*`, `.Fenetre_Cadre` en radius 20px, titre
+  tronqué au choix, boutons Fermer/Déplacer en pastille en haut à droite, bouton principal
+  `button.themeBoutonPrimaire:not([style*="display: none"])` (« Voir le PDF »).
+  ⚠ Ne jamais réveiller « Voir le document » ni l'engrenage des options PDF : tous deux en
+  `display:none` (d'où le `:not([style*="display: none"])`). Les logos des clouds
+  (`div.Image_Icone_Logo*`) sont des fonds natifs : ne pas les remplacer.
 - **Le `<main>` de PRONOTE est RÉUTILISÉ d'une page à l'autre** (et `#zone_fenetre`
   aussi) : une classe `pap-*` posée par un module reste collée quand on navigue
   ailleurs, et la feuille de style de l'ancienne page continue de s'appliquer. Tout
@@ -207,3 +262,17 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
    `main` ne doit porter **qu'un seul** marqueur de page (`pap-rlv` OU `pap-bul` OU
    `pap-bc`, jamais deux) et le `<div role="note">` une seule carte. Vérifier aussi que
    la bande de filtres (sélecteur de période seule) est bien collée au second menu.
+10. Sur `Notes → Bulletins → Anciens bulletins` : la carte doit être élargie (titre
+   « Anciens bulletins » révélé + bouton de recherche sur une seule ligne, lignes de l'arbre
+   en pastilles arrondies avec leur icône `calendar` / `newspaper`, chevron de dépliage
+   visible en teal, aucun `hr` visible) et le défilement doit rester DANS la carte. Tester le
+   dépliage de « Année 2025/2026 », la recherche (aucun doublon d'icône), le clic sur un
+   trimestre → **pop-up de dépôt du PDF** (cadre arrondi, titre tronqué, boutons
+   Fermer/Déplacer, « Voir le PDF » en dégradé, 3 lignes de cloud en pastilles avec logo et
+   bouton d'info, phrase d'invite en gris) puis sa fermeture, et le thème Clair ↔ Sombre.
+   Test de fuite : enchaîner `Relevé` → `Anciens bulletins` → `Mon bulletin de notes` 2 fois ;
+   en console, `main` ne doit porter qu'un seul marqueur de page (`pap-rlv` OU `pap-ab` OU
+   `pap-bul`), le `.ObjetListe` qu'un seul `pap-ab-list`, et après fermeture de la pop-up
+   plus aucun `pap-ab-fenetre` dans `#zone_fenetre`. Vérifier que le troisième menu vide
+   (`nav#ligne_bandeau` en `display:none`) n'apparaît pas, que « Consultation temporaire »
+   reste masquée, et que rien ne déborde sous le bord bas de l'écran.

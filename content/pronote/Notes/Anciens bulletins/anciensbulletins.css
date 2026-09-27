@@ -1,0 +1,1149 @@
+/* ============================================================
+   PAGE NOTES — « ANCIENS BULLETINS » façon Papillon
+   Cible : page « Notes → Bulletins → Anciens bulletins » PRONOTE,
+   repérée par son fil d'Ariane
+   h1#breadcrumbBandeau[aria-label="Anciens bulletins"]
+   (la classe .pap-ab est posée par anciensbulletins.js sur le <main>).
+
+   ⚠ Cette feuille est STRICTEMENT scopée à la page : elle ne touche
+   que des sélecteurs pap-ab-* ou :has(.pap-ab) / :has(.pap-ab-fenetre).
+   Les autres pages Notes (releve.css, bulletin.css, bulletinclasse.css)
+   conservent leurs propres règles — ne pas y toucher depuis ici.
+
+   Deux zones à traiter :
+   1. la carte : l'arbre des bulletins (année + trimestres) ;
+   2. la pop-up de dépôt du PDF (marquée .pap-ab-fenetre par le JS),
+      rendue hors du <main> dans #zone_fenetre — on lui applique la
+      recette déjà éprouvée de la fiche CDT (.pap-vh-fiche) : cadre
+      arrondi, titre, boutons fermer/déplacer, boutons principaux,
+      liste des clouds.
+
+   Restyle purement visuel : recherche, dépliage de l'année, ouverture
+   de la pop-up, dépôt du PDF et boutons du second menu restent natifs.
+   ============================================================ */
+
+/* ---------- Hauteur disponible ----------
+   Budget vertical calqué sur les autres pages Notes : les deux barres
+   sticky mesurées par header.js (le troisième menu de cette page est
+   vide et masqué, donc pas de budget supplémentaire) et les marges. */
+body.papillon-pronote main.interface_affV_client.pap-ab {
+  --pap-ab-h: calc(100vh - var(--pap-menu-h, 60px) - var(--pap-second-h, 54px) - 76px);
+}
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → forcer le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-ab, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-ab) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-ab {
+  background-color: transparent !important;
+}
+
+/* PRONOTE pose un height:100% inline sur le DIV qui enveloppe la
+   liste, et un max-width:45rem inherited de la colonne étroite de
+   l'ENT : on élargit (la liste vaut 496px, c'est étroit pour une
+   carte) et on laisse la hauteur libre. Le sélecteur est double car
+   le wrapper n'est pas toujours un enfant direct du <main> : la
+   variante :has(.pap-ab-list) rattrape le cas imbriqué. */
+body.papillon-pronote main.interface_affV_client.pap-ab > div[style*="max-width"],
+body.papillon-pronote main.interface_affV_client.pap-ab div[style*="max-width"]:has(.pap-ab-list) {
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 64rem !important;
+  padding: 10px 12px 14px !important;
+  box-sizing: border-box !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-ab .full-height {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* ============================================================
+   2. Neutralisation des surfaces blanches natives
+   PRONOTE peint en blanc chaque couche interne de sa liste → on les
+   rend transparentes pour que la carte Papillon « flotte » sur le
+   fond de page (même recette que Documents.css).
+   ============================================================ */
+body.papillon-pronote .pap-ab-list .liste_zone,
+body.papillon-pronote .pap-ab-list .liste_zoneFils,
+body.papillon-pronote .pap-ab-list .liste-heriar,
+body.papillon-pronote .pap-ab-list .liste_content,
+body.papillon-pronote .pap-ab-list .liste_content_lignes,
+body.papillon-pronote .pap-ab-list .liste_contenu_cellule,
+body.papillon-pronote .pap-ab-list .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-ab-list .liste_contenu_ligne,
+body.papillon-pronote .pap-ab-list .liste_conteneurCadreSelection,
+body.papillon-pronote .pap-ab-list .liste_cont_btnscroll,
+body.papillon-pronote .pap-ab-list .zone-centrale,
+body.papillon-pronote .pap-ab-list .zone-principale,
+body.papillon-pronote .pap-ab-list .liste_celluleGrid {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* PRONOTE donne à la liste des ombres internes (ombre-droite,
+   ombre-top) et un liseré sur .liste_content → on retire, la carte
+   porte sa propre ombre. */
+body.papillon-pronote .pap-ab-list,
+body.papillon-pronote .pap-ab-list .liste_zone,
+body.papillon-pronote .pap-ab-list .liste_content {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   3. La carte
+   .pap-ab-list est posée sur le .ObjetListe. Si la liste est vide,
+   l'état vide ci-dessous est lui-même une carte : on efface donc
+   l'enveloppe pour éviter deux cartes imbriquées.
+   ============================================================ */
+body.papillon-pronote .pap-ab-list {
+  display: block !important;
+  background: var(--papillon-surface, #ffffff) !important;
+  border: 1px solid var(--papillon-border, #e7efee) !important;
+  border-radius: 25px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .06) !important;
+  padding: 10px 10px 12px !important;
+  overflow: hidden !important;
+}
+
+body.papillon-pronote .pap-ab-list:has(.pap-ab-empty) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* ---------- Largeurs inline : PRONOTE fige la colonne à 496px/479px ---------- */
+body.papillon-pronote .pap-ab-list .liste_btnentete,
+body.papillon-pronote .pap-ab-list .liste_zone,
+body.papillon-pronote .pap-ab-list .liste_zoneFils,
+body.papillon-pronote .pap-ab-list .liste_content,
+body.papillon-pronote .pap-ab-list .liste_content_lignes,
+body.papillon-pronote .pap-ab-list .liste_content_lignes > div,
+body.papillon-pronote .pap-ab-list .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-ab-list .liste_contenu_ligne {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* La grille inline (grid-template-columns:479px) devient une colonne
+   fluide, sinon les lignes restent à 479px dans une carte élargie. */
+body.papillon-pronote .pap-ab-list .liste_content_lignes {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
+}
+
+/* Le liseré interne (padding:0 3px) fait doubler la gouttière. */
+body.papillon-pronote .pap-ab-list .liste_content {
+  padding: 0 !important;
+}
+
+/* ---------- Viewport de liste borné ----------
+   PRONOTE pose une hauteur inline fixe (40px, ajustée au nombre de
+   lignes) sur #…_Zone_1 : on la transforme en max-height relative au
+   viewport, la liste défile alors DANS la carte. */
+body.papillon-pronote .pap-ab-list .liste_content > div[style] {
+  height: auto !important;
+  max-height: var(--pap-ab-h) !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* ---------- Barre de défilement native de PRONOTE ----------
+   Le conteneur #…_Zone_1 est passé en overflow:auto : sa propre barre
+   `.liste_cont_btnscroll` (affichée seulement quand la liste défile
+   déjà) ferait doublon. On la retire : le défilement natif suffit. */
+body.papillon-pronote .pap-ab-list .liste_cont_btnscroll {
+  display: none !important;
+}
+
+/* ============================================================
+   4. Barre de titre de la carte
+   Sur cette page PRONOTE ne pose AUCUN titre visible : le libellé
+   « Anciens bulletins » vit dans un <span class="sr-only"
+   id="…_labelListe"> posé en FIN de liste (il ne sert qu'au
+   aria-labelledby de la grille). C'est donc anciensbulletins.js qui
+   en injecte une copie visible dans .liste_btnentete (le sr-only
+   reste en place pour l'accessibilité), à côté du bouton de
+   recherche, avec un compteur du nombre de bulletins.
+   ============================================================ */
+body.papillon-pronote .pap-ab-list .liste_btnentete {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 4px 6px 12px !important;
+  background: transparent !important;
+}
+
+/* Titre injecté (.pap-ab-title) — et, selon la version de PRONOTE,
+   l'ancien .liste_enteteTxt.sr-only qu'on révèle aussi. */
+body.papillon-pronote .pap-ab-list .pap-ab-title,
+body.papillon-pronote .pap-ab-list .liste_enteteTxt {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  clip: auto !important;
+  clip-path: none !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+  color: var(--papillon-text, #10130f) !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* Compteur « 4 bulletins » sous forme de pastille douce */
+body.papillon-pronote .pap-ab-list .pap-ab-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  background: #eaf7f4 !important;
+  color: #157a63 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+body.papillon-pronote .pap-ab-list .liste_contbtnRechercheEntete {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+}
+
+/* Bouton de recherche : pastille façon Papillon (recette Documents) */
+body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage,
+body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  border-radius: 300px !important;
+  background: var(--papillon-hover, #f2f6f5) !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage:hover,
+body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond:hover {
+  background: #ddf2ec !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage:active {
+  transform: scale(.94) !important;
+}
+
+body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage svg,
+body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond svg,
+body.papillon-pronote .pap-ab-list .liste_btnentete .icone-svg {
+  width: 19px !important;
+  height: 19px !important;
+  fill: currentColor !important;
+}
+
+body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage svg path,
+body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond svg path,
+body.papillon-pronote .pap-ab-list .liste_btnentete .icone-svg path {
+  fill: currentColor !important;
+}
+
+/* ============================================================
+   5. Lignes de l'arbre (année + trimestres)
+   PRONOTE pose des dimensions inline sur chaque couche
+   (min-height:40px, padding:1px 1px, width:478px) : on les remplace
+   pour obtenir des lignes plus aérées qui restent cliquables.
+   ============================================================ */
+body.papillon-pronote .pap-ab-list .pap-ab-row {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+  margin: 3px 0 !important;
+  cursor: pointer !important;
+  transition: background-color .15s ease !important;
+}
+
+/* Barre de sélection / surbrillance natives : on les neutralise. */
+body.papillon-pronote .pap-ab-list .pap-ab-row .liste_conteneurCadreSelection,
+body.papillon-pronote .pap-ab-list .pap-ab-row .liste_contenu_cellule,
+body.papillon-pronote .pap-ab-list .pap-ab-row .liste_contenu_cellule_contenu {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-row:hover {
+  background: var(--papillon-hover, #f2f6f5) !important;
+}
+
+/* La sélection est portée par la classe .selected sur la ligne, et par
+   aria-selected sur le div INTÉRIEUR (role="treeitem") : d'où :has(). */
+body.papillon-pronote .pap-ab-list .pap-ab-row.with-select.selected,
+body.papillon-pronote .pap-ab-list .pap-ab-row:has([role="treeitem"][aria-selected="true"]) {
+  background: rgba(53, 187, 160, .12) !important;
+  box-shadow: inset 0 0 0 1px rgba(53, 187, 160, .35) !important;
+}
+
+/* Ligne de contenu : flex pour que l'icône papicon ajoutée par le JS
+   s'aligne avec le chevron de dépliage et le libellé. */
+body.papillon-pronote .pap-ab-list .pap-ab-row .liste_contenu_ligne {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 62px !important;
+  overflow: hidden !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* Icône papicon injectée par anciensbulletins.js */
+body.papillon-pronote .pap-ab-list .pap-ab-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 13px !important;
+  background: #f2f6f5 !important;
+  color: #5f7b73 !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: currentColor !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-icon svg path {
+  fill: currentColor !important;
+}
+
+/* L'année : pastille légèrement plus contrastée, c'est un groupe. */
+body.papillon-pronote .pap-ab-list .pap-ab-row-year .pap-ab-icon {
+  background: #ddf2ec !important;
+  color: #157a63 !important;
+}
+
+/* Les lignes d'un bulletin (trimestre) portent l'accent Papillon. */
+body.papillon-pronote .pap-ab-list .pap-ab-row-bulletin .pap-ab-icon {
+  background: #eaf7f4 !important;
+  color: #2ea88e !important;
+}
+
+/* ---------- Bouton de dépliage de l'année (le « bouton individuel ») ----------
+   C'est un <i role="button" class="btn-deploiement btnImage"> dont le SVG
+   pointe vers .icone-svg-fleche_num_bas : PRONOTE fait tourner l'icône
+   (et lui change éventuellement de classe) pour l'état déplié/replié. On
+   ne touche donc JAMAIS au transform de l'icône ni à sa classe : seule
+   la couleur, la pastille de survol et la taille sont traitées. */
+body.papillon-pronote .pap-ab-list .zone-deploiement {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  min-width: 24px !important;
+}
+
+body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement,
+body.papillon-pronote .pap-ab-list .zone-deploiement .btnImage {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #35bba0 !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  transition: background .15s ease !important;
+}
+
+body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement:hover,
+body.papillon-pronote .pap-ab-list .zone-deploiement .btnImage:hover {
+  background: #ddf2ec !important;
+}
+
+body.papillon-pronote .pap-ab-list .zone-deploiement .icone-svg,
+body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: currentColor !important;
+}
+
+body.papillon-pronote .pap-ab-list .zone-deploiement .icone-svg path,
+body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement svg path {
+  fill: currentColor !important;
+}
+
+/* L'indentation des lignes enfants : on la remplace par l'icône, sinon
+   elle décale inutilement les trimestres sous leur année. */
+body.papillon-pronote .pap-ab-list .zone-deploiement.indentation-fils-1 {
+  min-width: 0 !important;
+  width: 0 !important;
+}
+
+/* Libellé : la zone de texte occupe tout le reste de la largeur */
+body.papillon-pronote .pap-ab-list .pap-ab-row .zone-centrale,
+body.papillon-pronote .pap-ab-list .pap-ab-row .zone-contenu-format,
+body.papillon-pronote .pap-ab-list .pap-ab-row .zone-principale {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-row .titre-principale {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+  color: var(--papillon-text, #10130f) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Ligne d'année : c'est le seul vrai « titre » de la liste. */
+body.papillon-pronote .pap-ab-list .pap-ab-row-year .titre-principale {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.015em !important;
+}
+
+/* Pastille de trimestre (« T1 », « T2 »…) injectée par le JS à droite
+   de la ligne : elle exploite la largeur restante et évite que le
+   libellé reste seul sur une carte large. */
+body.papillon-pronote .pap-ab-list .pap-ab-trim {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  margin: 0 0 0 auto !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  background: #f2f6f5 !important;
+  color: #5f7b73 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-row-year .pap-ab-trim {
+  background: #ddf2ec !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-row:hover .titre-principale {
+  color: #227e6b !important;
+}
+
+body.papillon-pronote .pap-ab-list .pap-ab-row.with-select.selected .titre-principale {
+  color: #227e6b !important;
+}
+
+/* Séparateurs natifs masqués : le rayon des lignes fait l'affaire. */
+body.papillon-pronote .pap-ab-list hr.liste_sepligne {
+  display: none !important;
+  border: 0 !important;
+  margin: 0 !important;
+  height: 0 !important;
+}
+
+/* ============================================================
+   6. État vide de la liste
+   PRONOTE écrit un texte nu dans .liste_messageVide : on l'encadre en
+   carte pointillée centrée (EmptyItem Papillon). La classe
+   .pap-ab-empty est posée par anciensbulletins.js.
+   ============================================================ */
+body.papillon-pronote .pap-ab-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  min-height: min(var(--pap-ab-h), 420px) !important;
+  margin: 0 !important;
+  padding: 26px 18px !important;
+  border: 1.5px dashed var(--papillon-border, #e7efee) !important;
+  border-radius: 25px !important;
+  background: var(--papillon-surface, #ffffff) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+  color: var(--papillon-text, #10130f) !important;
+  text-align: center !important;
+}
+
+body.papillon-pronote .pap-ab-empty p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--papillon-text, #10130f) !important;
+  text-align: center !important;
+}
+
+body.papillon-pronote .pap-ab-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  color: #c8d6d1 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .pap-ab-empty-icon svg {
+  width: 48px !important;
+  height: 48px !important;
+  fill: currentColor !important;
+}
+
+/* ============================================================
+   7. Boutons du second menu (Enregistrer / Générer le PDF)
+   PRONOTE les rend en <i class="btnImage"> / <i class="btnImageDisable">
+   ce ne sont ni des <a>, ni des <button>, ni des [role=button], donc
+   la règle globale de header.css ne les touche pas : sans ce bloc
+   ils resteraient invisibles sur cette page. On leur donne la même
+   pastille que les boutons du bandeau (fond clair, survol teal,
+   enfoncement au clic), mais scopé à :has(.pap-ab) — les autres
+   pages gardent leurs propres règles.
+
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième contient
+   la bannière rouge « Consultation temporaire » que PRONOTE masque
+   avec style="display:none", et un display:flex !important ici la
+   ferait réapparaître. */
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .icone-svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 0 !important;
+  border-radius: 300px !important;
+  background: #f1f1f1 !important;
+  border: 1px solid #e7efee !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .icone-svg:hover {
+  background: #ddf2ec !important;
+  border-color: #81c9b6 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImage:active {
+  transform: scale(.94) !important;
+}
+
+/* Désactivé : estompé mais visible. */
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes [aria-disabled="true"].btnImage {
+  opacity: .55 !important;
+  cursor: default !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .icone-svg,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes svg path,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes svg use,
+body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes svg g {
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ============================================================
+   8. POP-UP de dépôt du PDF  (.pap-ab-fenetre)
+   Rendue dans #zone_fenetre, hors du <main> : même recette que la
+   fiche « Contenu du cours » du cahier de textes (variables
+   --pap-ab-fiche-*, radius 20px, boutons ronds en haut à droite).
+   ============================================================ */
+body.papillon-pronote .pap-ab-fenetre {
+  --pap-ab-fiche-bg: #ffffff;
+  --pap-ab-fiche-surface: #f7faf9;
+  --pap-ab-fiche-hover: #f2f6f5;
+  --pap-ab-fiche-title: #10130f;
+  --pap-ab-fiche-text: #10130f;
+  --pap-ab-fiche-soft: #8a9b95;
+  --pap-ab-fiche-border: #e7efee;
+  --pap-ab-fiche-accent: #35bba0;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-fenetre {
+  --pap-ab-fiche-bg: #1a211e;
+  --pap-ab-fiche-surface: #202926;
+  --pap-ab-fiche-hover: #26322d;
+  --pap-ab-fiche-title: #e7efec;
+  --pap-ab-fiche-text: #e7efec;
+  --pap-ab-fiche-soft: #93a79f;
+  --pap-ab-fiche-border: #2a3531;
+  --pap-ab-fiche-accent: #35bba0;
+}
+
+/* Le conteneur flottant (#…Fenêtre) porte un min-width inline et
+   aucune couleur : on le neutralise, tout est dans .Fenetre_Cadre. */
+body.papillon-pronote .pap-ab-fenetre {
+  min-width: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--pap-ab-fiche-text) !important;
+}
+
+/* Cadre (le natif pose width:380px, min-height:400px et un
+   background-color:var(--color-background) inline) */
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Cadre {
+  position: relative !important;
+  width: 420px !important;
+  max-width: calc(100vw - 40px) !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--pap-ab-fiche-bg) !important;
+  color: var(--pap-ab-fiche-text) !important;
+  border: 1px solid var(--pap-ab-fiche-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .18) !important;
+  overflow: hidden !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-fenetre .Fenetre_Cadre {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .4) !important;
+}
+
+/* Titre : le nom du fichier PDF est long → 16px, tranché au besoin
+   pour ne jamais passer sous les boutons. */
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Titre {
+  padding: 18px 92px 12px 18px !important;
+  border-bottom: 1px solid var(--pap-ab-fiche-border) !important;
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Titre h1 {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  color: var(--pap-ab-fiche-title) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Boutons fermer / déplacer : pastilles en haut à droite */
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .btnImageIcon,
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .btnImage {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: var(--pap-ab-fiche-hover) !important;
+  color: var(--pap-ab-fiche-soft) !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .btnImageIcon:hover,
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .btnImage:hover {
+  background: rgba(53, 187, 160, .12) !important;
+  color: var(--pap-ab-fiche-accent) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .btnImageIcon:active {
+  transform: scale(.94) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .icone-svg,
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur .icone-svg path,
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur svg,
+body.papillon-pronote .pap-ab-fenetre .cta-conteneur svg path {
+  width: 15px !important;
+  height: 15px !important;
+  fill: currentColor !important;
+}
+
+/* Corps défilant (le natif pose max-height:600px en inline) */
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Contenu {
+  max-height: min(60vh, 600px) !important;
+  background: var(--pap-ab-fiche-bg) !important;
+  color: var(--pap-ab-fiche-text) !important;
+  padding: 16px 18px 18px !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Scroll,
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Contenu > div,
+body.papillon-pronote .pap-ab-fenetre .Espace {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Scroll * {
+  scrollbar-color: #cfdcd7 transparent;
+}
+
+body.papillon-pronote .pap-ab-fenetre .Fenetre_Scroll::-webkit-scrollbar-thumb {
+  background: #cfdcd7;
+  border: none;
+  border-radius: 999px;
+}
+
+/* ---------- Bouton principal « Voir le PDF » ----------
+   Le natif en propose un second, « Voir le document », que PRONOTE
+   masque (style="display:none") : on ne le réveille surtout pas, d'où
+   le :not([style*="display: none"]). */
+body.papillon-pronote .pap-ab-fenetre button.themeBoutonPrimaire:not([style*="display: none"]) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 9px 18px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: var(--papillon-grad) !important;
+  color: #ffffff !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: filter .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre button.themeBoutonPrimaire:not([style*="display: none"]):hover {
+  filter: brightness(.95) !important;
+  color: #ffffff !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre button.themeBoutonPrimaire:not([style*="display: none"]):active {
+  transform: scale(.98) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre [data-usedas="conteneurBoutonPDF"] {
+  gap: 8px !important;
+  margin: 0 0 4px !important;
+}
+
+/* L'engrenage des options PDF est masqué par PRONOTE : on garde son
+   état (aucune règle ne le force visible). */
+
+/* Phrase d'invite : texte doux, centré */
+body.papillon-pronote .pap-ab-cloud-hint {
+  display: block !important;
+  margin: 2px 0 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--pap-ab-fiche-soft) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  text-align: center !important;
+}
+
+/* ---------- Liste des clouds (Digiposte, Dropbox, One Drive) ---------- */
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_zone,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_zoneFils,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste-heriar,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content_lignes,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_contenu_cellule,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_contenu_ligne,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_conteneurCadreSelection,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_cont_btnscroll {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_zone,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content_lignes,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content_lignes > div,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_contenu_ligne {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content_lignes {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Hauteur inline (155px) figée sur le nombre de lignes : on la laisse
+   libre, la popule est déjà bornée par .Fenetre_Contenu. */
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_content > div[style] {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud .liste_cont_btnscroll {
+  display: none !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .DonneesListe_SelectionCloud hr.liste_sepligne {
+  display: none !important;
+  border: 0 !important;
+  margin: 0 !important;
+  height: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  margin: 2px 0 !important;
+  cursor: pointer !important;
+  transition: background-color .15s ease !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud:hover {
+  background: var(--pap-ab-fiche-hover) !important;
+}
+
+/* Même repère que la liste principale : la classe .selected est sur la
+   ligne, aria-selected sur le div intérieur → d'où les deux sélecteurs. */
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud.with-select.selected,
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud:has([role="treeitem"][aria-selected="true"]) {
+  background: rgba(53, 187, 160, .12) !important;
+  box-shadow: inset 0 0 0 1px rgba(53, 187, 160, .35) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .liste_contenu_ligne {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  box-sizing: border-box !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-centrale {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-contenu-format {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-principale {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .titre-principale {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: var(--pap-ab-fiche-text) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .infos-supp {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 1px 0 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  color: var(--pap-ab-fiche-soft) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .infos-supp .icone-svg {
+  width: 13px !important;
+  height: 13px !important;
+  fill: currentColor !important;
+  color: var(--pap-ab-fiche-soft) !important;
+}
+
+/* Logo du cloud : natif (image de fond PRONOTE) — on ne fait que
+   lui donner sa taille et son cadre, sans toucher à l'image. */
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  background: var(--pap-ab-fiche-hover) !important;
+  overflow: hidden !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .icon > div[class^="Image_Icone_Logo"] {
+  width: 20px !important;
+  height: 20px !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Bouton d'information « Documents certifiés » (bouton individuel) */
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire {
+  display: flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire .btnImage {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-height: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--pap-ab-fiche-soft) !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire .btnImage:hover {
+  background: var(--pap-ab-fiche-hover) !important;
+  color: var(--pap-ab-fiche-accent) !important;
+}
+
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire .btnImage svg,
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire .btnImage .icone-svg,
+body.papillon-pronote .pap-ab-fenetre .pap-ab-cloud .zone-complementaire .icone-svg path {
+  width: 15px !important;
+  height: 15px !important;
+  fill: currentColor !important;
+}
+
+/* Pied vide de la pop-up : on retire la réserve pour ne pas laisser de
+   bande blanche sous la liste des clouds. */
+body.papillon-pronote .pap-ab-fenetre .zone-bas {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+
+/* ============================================================
+   9. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-title,
+html.papillon-dark body.papillon-pronote .pap-ab-list .liste_enteteTxt {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage,
+html.papillon-dark body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond {
+  background: #202926 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .liste_btnentete .btnImage:hover,
+html.papillon-dark body.papillon-pronote .pap-ab-list .liste_btnentete .avecFond:hover {
+  background: #14352c !important;
+  color: #35bba0 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row:hover {
+  background: #202926 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row.with-select.selected,
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row:has([role="treeitem"][aria-selected="true"]) {
+  background: rgba(53, 187, 160, .18) !important;
+  box-shadow: inset 0 0 0 1px rgba(53, 187, 160, .45) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-icon {
+  background: #202926 !important;
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row-bulletin .pap-ab-icon {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row-year .pap-ab-icon {
+  background: #1b4a3d !important;
+  color: #7ee0cb !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-trim {
+  background: #202926 !important;
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row-year .pap-ab-trim {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-count {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement,
+html.papillon-dark body.papillon-pronote .pap-ab-list .zone-deploiement .btnImage {
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .zone-deploiement .btn-deploiement:hover {
+  background: #14352c !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row .titre-principale {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row:hover .titre-principale,
+html.papillon-dark body.papillon-pronote .pap-ab-list .pap-ab-row.with-select.selected .titre-principale {
+  color: #35bba0 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-empty {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-ab-empty p {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImageDisable,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .icone-svg {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-ab) .menu-commandes .icone-svg:hover {
+  background: #14352c !important;
+  border-color: #29947a !important;
+  color: #35bba0 !important;
+}

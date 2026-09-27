@@ -20,9 +20,10 @@ la page de connexion **EduConnect** (`educonnect.education.gouv.fr`) et l'espace
   emploi du temps et travail à faire restylés, pied de page épuré ;
 - **Pages PRONOTE couvertes** : accueil (widgets), Cahier de textes (Contenus, Travail à faire
   en vue chronologique **et** hebdomadaire, Forums), Mes données (Compte, Documents),
-  Notes (Détail de mes notes, Relevé, Mon bulletin de notes, Bulletin de ma classe) —
-  le relevé et les deux bulletins affichent une carte d'état vide tant que le document
-  n'est pas publié ;
+  Notes (Détail de mes notes, Relevé, Mon bulletin de notes, Bulletin de ma classe,
+  Anciens bulletins) — le relevé et les deux bulletins affichent une carte d'état vide
+  tant que le document n'est pas publié, les anciens bulletins sont, eux, une carte
+  listant les bulletins déjà publiés par année et par trimestre ;
 - **Mode sombre** réglable depuis les **paramètres de l'extension** (options : thème Clair / Sombre),
   appliqué à toutes les pages (connexions + PRONOTE).
 
