@@ -1,0 +1,199 @@
+/* ============================================================
+   PAGE COMPÉTENCES — « NIVEAUX DE MAITRISE PAR MATIÈRE »
+   façon Papillon
+   Cible : page « Compétences → Bilan par domaine → Niveaux de
+   maitrise par matière » PRONOTE, repérée par son fil d'Ariane
+   h1#breadcrumbBandeau[aria-label="Niveaux de maitrise par matière"]
+   (la classe .pap-nm est posée par niveauxmaitrise.js sur le
+   <main>).
+
+   Restyle purement visuel : le message d'état vide devient une
+   carte vide Papillon à pointillés. Le sélecteur de période du
+   troisième menu (le SEUL sélecteur de cette page) est déjà stylé
+   par header.css, et les boutons d'enregistrement / PDF sont
+   traités plus bas (section 4).
+
+   ⚠ Ne pas confondre avec la page voisine « Évaluations par
+   compétence » (même sous-menu « Bilan par domaine ») : cette
+   feuille ne doit toucher QUE les classes pap-nm-*, jamais
+   pap-bpd-* ni les classes des autres pages (pap-ev, pap-dp,
+   pap-bp, pap-bpc, pap-rlv, pap-bul, pap-bc, pap-ab). Elle ne doit
+   surtout pas révéler ce que PRONOTE masque.
+   ============================================================ */
+
+/* ---------- Hauteur disponible ----------
+   Budget vertical calqué sur les pages bilans : les deux barres
+   sticky mesurées par header.js, la bande de période (troisième
+   menu) et les marges de la page. */
+body.papillon-pronote main.interface_affV_client.pap-nm {
+  --pap-nm-h: calc(100vh - var(--pap-menu-h, 60px) - var(--pap-second-h, 54px) - 96px);
+}
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → forcer le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-nm, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-nm) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-nm {
+  background-color: transparent !important;
+}
+
+/* Sécurité : neutraliser toute hauteur/largeur inline fixée par
+   PRONOTE sur la chaîne de conteneurs qui porte la carte vide. */
+body.papillon-pronote main.interface_affV_client.pap-nm > div[style*="height"],
+body.papillon-pronote main.interface_affV_client.pap-nm > div[style*="width"] {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Chaîne de conteneurs qui porte la carte vide : on ne libère la
+   hauteur que sur CETTE chaîne, via :has(), pour ne pas toucher au
+   reste une fois les évaluations publiées (le message ayant
+   disparu, plus rien ne matche, aucune règle ne s'applique). */
+body.papillon-pronote main.interface_affV_client.pap-nm .interface_affV_padding:has(.pap-nm-empty),
+body.papillon-pronote main.interface_affV_client.pap-nm .interface_affV_client:has(> .pap-nm-empty) {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+/* Nota : sur cette page, contrairement aux pages bilans, le <div
+   role="note"> est un enfant direct de la chaîne de conteneurs
+   (aucun .Espace ni .Table.BorderBox entre les deux). */
+
+/* ============================================================
+   2. Carte d'état vide
+   PRONOTE n'affiche qu'un <p> centré ; on l'encadre en carte
+   pointillée centrée verticalement dans la page. La classe
+   .pap-nm-empty est posée par niveauxmaitrise.js sur le
+   <div role="note">.
+   ============================================================ */
+body.papillon-pronote .pap-nm-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  min-height: var(--pap-nm-h) !important;
+  margin: 10px 12px 14px !important;
+  padding: 26px 18px !important;
+  border: 1.5px dashed var(--papillon-border, #e7efee) !important;
+  border-radius: 25px !important;
+  background: var(--papillon-surface, #ffffff) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+}
+
+body.papillon-pronote .pap-nm-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  color: #c8d6d1 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .pap-nm-empty-icon svg {
+  width: 48px !important;
+  height: 48px !important;
+  fill: currentColor !important;
+}
+
+/* Le <p> natif porte .p-y-xl / .m-bottom-l / .text-center : on
+   annule ces utilitaires pour laisser la carte gérer l'espacement. */
+body.papillon-pronote .pap-nm-empty > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: var(--papillon-text, #10130f) !important;
+}
+
+/* ============================================================
+   3. Contenu publié (niveaux de maitrise par matière)
+   NON traité pour l'instant : tant qu'aucune évaluation n'existe,
+   PRONOTE n'affiche que le <div role="note"> de l'état vide. Ce qui
+   sera rendu une fois des évaluations présentes (sans doute une
+   grille) est inconnu — à faire sur le modèle de la section 3 de
+   releve.css quand un contenu réel sera observé.
+   ============================================================ */
+
+/* ============================================================
+   4. Boutons du second menu (enregistrer / PDF)
+   Ils sont désactivés tant que le contenu n'est pas publié : on
+   les pose en cercles fantômes pour qu'ils ne cassent pas la barre.
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième contient
+   la bannière rouge « Consultation temporaire » que PRONOTE masque
+   avec style="display:none", et un display:flex !important ici la
+   ferait réapparaître. On n'agit donc que sur les <i> de bouton,
+   déjà visibles, et sur leurs SVG.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImageDisable {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 1px solid #e7efee !important;
+  opacity: .5 !important;
+  transition: background-color .15s ease, opacity .15s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #f2f6f5 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes svg path {
+  fill: #5d6b66 !important;
+  stroke: #5d6b66 !important;
+}
+
+/* ============================================================
+   5. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-nm-empty {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-nm-empty > p {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes svg,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes svg path {
+  fill: #93a79f !important;
+  stroke: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImageDisable {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-nm) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #202926 !important;
+}

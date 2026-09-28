@@ -117,6 +117,22 @@ content/pronote/Compétences/Évaluations par compétence/  Page « Compétences
                            1717px 87px 96px, `grid-column:1/3 3/5 5/7`) à rendre
                            fluides. Classes `pap-bpd-*`. Fichiers en ASCII
                            (`evaluationsparcompetence.js` / `.css`).
+content/pronote/Compétences/Niveaux de maitrise par matière/  Page « Compétences → Bilan
+                           par domaine → Niveaux de maitrise par matière » (fil
+                           d'Ariane STRICTEMENT « Niveaux de maitrise par matière »,
+                           page voisine d'« Évaluations par compétence » — ne pas
+                           élargir l'ancre en préfixe « Niveaux… », sinon les deux
+                           pages se marquent) : DOM minimal d'état vide — aucune
+                           `.Espace`/`.Table.BorderBox`/`.liste-*`, le `<div
+                           role="note">` du message (« Le bulletin de compétences ne
+                           contient aucune évaluation. », **icône `graduation-hat`**,
+                           PAS de date) est enfant direct de la chaîne
+                           `main.interface_affV_client > .interface_affV_padding >
+                           .interface_affV_client`. Troisième menu : UN SEUL sélecteur
+                           (période). Classes `pap-nm-*`. Fichiers en ASCII
+                           (`niveauxmaitrise.js` / `niveauxmaitrise.css`).
+                           Contenu publié (grille des niveaux de maitrise) non traité
+                           (DOM inconnu tant qu'aucune évaluation n'existe).
 
 
 
@@ -290,9 +306,9 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   cartes s'empilent).
 - `Compétences/Mon bilan périodique` : ancre **égalité stricte** sur
   `aria-label="Mon bilan périodique"`, classes `pap-bp-*`, **jamais** `pap-bul-*` ni
-  `pap-bc-*` ni `pap-bpc-*`. Les dix ancres (5 Notes + `mes évaluations` + `Difficultés
+  `pap-bc-*` ni `pap-bpc-*`. Les onze ancres (5 Notes + `mes évaluations` + `Difficultés
   et points d'appui` + `Bilan périodique de ma classe` + `Évaluations par compétence` +
-  celle-ci) restent mutuellement exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
+  `Niveaux de maitrise par matière` + celle-ci) restent mutuellement exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
   identique) ne doit **pas** être attrapée : ne pas élargir l'ancre en regex ni en
   préfixe.
   ⚠ Contrairement aux pages Notes, le `<div role="note">` du message n'est **pas** un enfant
@@ -312,7 +328,7 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   non traité : tous en `display:none` en ligne, ne pas les révéler.
 - `Compétences/Bilan périodique de ma classe` : ancre **égalité stricte** sur
   `aria-label="Bilan périodique de ma classe"`, classes `pap-bpc-*`, **jamais** `pap-bp-*`
-  ni `pap-bc-*`. Les dix ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
+  ni `pap-bc-*`. Les onze ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
   en regex ni en préfixe « Bilan périodique… », sinon la page voisine « Mon bilan
   périodique » se marque aussi (deux cartes vides superposées).
   ⚠ `pap-bpc-*` (bilan périodique **de ma classe**) et `pap-bc-*` (Notes → « Bulletin de
@@ -327,9 +343,13 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   conséquence tant que le bilan publié n'est pas traité.
 - `Compétences/Évaluations par compétence` : ancre **égalité stricte** sur
   `aria-label="Évaluations par compétence"`, classes `pap-bpd-*`, **jamais** `pap-ev-*` ni
-  `pap-dp-*` ni `pap-bp-*` ni `pap-bpc-*`. Les dix ancres Compétences/Notes restent
-  mutuellement exclusives ; ne **pas** élargir l'ancre en regex (elle ressemblerait à
-  « Détail de mes évaluations » / « Mes évaluations » de `mesevaluations.js`).
+`pap-dp-*` ni `pap-bp-*` ni `pap-bpc-*`. Les onze ancres Compétences/Notes restent
+   mutuellement exclusives ; ne **pas** élargir l'ancre en regex (elle ressemblerait à
+   « Détail de mes évaluations » / « Mes évaluations » de `mesevaluations.js`).
+   ⚠ La page voisine « Niveaux de maitrise par matière » (même sous-menu « Bilan par
+   domaine ») vit dans un dossier séparé (`niveauxmaitrise.js` / `.css`, classes
+   `pap-nm-*`) : l'ancre de « Niveaux… » est une égalité stricte distincte, donc les deux
+   modules n'interfèrent pas ; ne jamais élargir leurs ancres en préfixe commun.
   ⚠ DOM inédit : ici une « ligne » de la grille n'est PAS un élément — chaque ligne est un
   groupe de TROIS `.liste_celluleGrid` adjacents (une par colonne Items/Niveau/Validé le),
   FRÈRES consécutifs de la grille (survol/sélection de ligne via `+ .pap-bpd-cell +
@@ -541,5 +561,18 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     boutons du second menu sont en pastilles fantômes (désactivés), que « Consultation
     temporaire » reste masquée, et que la bande de filtres est collée au second menu.
     Thème Clair ↔ Sombre.
+16. Sur `Compétences → Bilan par domaine → Niveaux de maitrise par matière` : la page doit
+    n'afficher qu'**une** carte d'état vide pointillée — « Le bulletin de compétences ne
+    contient aucune évaluation. », icône `graduation-hat` et **PAS de date en pastille**
+    (contrairement aux pages bilans, le message ne contient aucune date) — occupant la
+    hauteur disponible (rien ne doit déborder sous le bord bas de l'écran), et les deux
+    boutons du second menu (Enregistrer, PDF) en pastilles fantômes désactivées. Le
+    troisième menu porte un **seul** sélecteur (période) : la bande de filtres doit être
+    collée au second menu, sans fente. Changer de période : pas de doublon d'icône.
+    Test de fuite : enchaîner `Évaluations par compétence` → `Niveaux de maitrise par
+    matière` 2 fois ; en console, `main` ne doit porter qu'UN seul marqueur de page
+    (`pap-bpd` OU `pap-nm`, jamais deux), `main [role="note"]` qu'un seul `pap-nm-empty`
+    (avec une unique icône), et plus aucun `pap-nm-*` après être reparti sur une autre
+    page. Vérifier que « Consultation temporaire » reste masquée. Thème Clair ↔ Sombre.
 
 
