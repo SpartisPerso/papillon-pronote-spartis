@@ -67,7 +67,22 @@ content/pronote/Compétences/mes évaluations/  Page « Compétences → Évalua
                            menu. Classes `pap-ev-*`. Fichiers en ASCII
                            (`mesevaluations.js` / `mesevaluations.css`). Lignes
                            d'évaluation et détail d'une évaluation sélectionnée non
-                           traités (DOM inconnu : aucune période de test n'en affiche).
+                            traités (DOM inconnu : aucune période de test n'en affiche).
+content/pronote/Compétences/Difficultés et points d'appui/  Page « Compétences → Évaluations →
+                           Difficultés et points d'appui » (fil d'Ariane « Difficultés et
+                           points d'appui ») : les DEUX `.PanelDonneesEleveListe`
+                           (« Compétences non maîtrisées : 0 » / « Compétences maîtrisées :
+                           0 ») en cartes côte à côte, le titre NATIF et sa pastille
+                           d'icône **dans** la carte (`cross` pour les non maîtrisées,
+                           `check` pour les maîtrisées), et, tant que la liste est vide,
+                           masquage du squelette natif (`.liste_btnentete` +
+                           `.liste-heriar` + `.liste_zone`) au profit d'un bloc
+                           pointillé **à l'intérieur** de la carte (`ghost` + message +
+                           pastilles de période ET de cycle). Boutons du second menu.
+                           Classes `pap-dp-*`. Fichiers en ASCII (`difficultes.js` /
+                           `difficultes.css`). Contenu des lignes non traité (DOM inconnu :
+                           le tableau est `vide` sur toutes les périodes de test).
+
 
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
@@ -194,6 +209,48 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   masquée (`.pap-ev-detail-vide`, la grille repassant à une colonne). Les blocs masqués en
   `visibility:hidden` du troisième menu (tri « Par ordre chronologique / Par matière »,
   bouton « Légende ») sont déjà retirés par `header.css` — ne pas refaire la règle.
+- `Compétences/Difficultés et points d'appui` : ancre **égalité stricte** sur
+  `aria-label="Difficultés et points d'appui"` (apostrophe droite, `d'appui` en un seul mot),
+  classes `pap-dp-*`, **jamais** `pap-ev-*`. Les sept ancres (5 Notes + `mes évaluations` +
+  celle-ci) restent mutuellement exclusives.
+  Les deux titres natifs sont `BandeauTitreTypeResultats` (« Compétences non maîtrisées :
+  0 ») : on les garde **tels quels** (texte et compte) et le JS n'injecte que la pastille
+  d'icône devant eux — ne jamais scinder ni réécrire ce texte.
+  « Compétences non maîtrisées » contient la chaîne « maîtrisées » : tester donc
+  `/non\s+ma[îi]tris/i` en premier pour choisir la pastille (`cross` vs `check`).
+  Le troisième menu porte **deux** sélecteurs (période PUIS cycle) : cibler chacun par son
+  `aria-label` (« Sélectionner une période » / « Sélectionnez un cycle »), **jamais** le
+  premier `.ocb-libelle` en aveugle.
+  La carte d'état vide est injectée dans le `.ObjetListe` : ne **jamais** la re-appendre
+  quand elle est déjà en place, `appendChild()` déplaçant le nœud → mutation `childList` →
+  `processAll()` → boucle infinie. Enfin, PRONOTE masque `#…_pageMessage` et
+  `#…_pageDonneesClasse` (panneau « données de la classe ») avec un `display:none` en ligne :
+  cette feuille ne doit surtout pas les styler, sinon une règle `!important` révélerait un
+  bloc vide.
+  ⚠ L'état vide est signalé par la **classe `.vide`** de la liste et la hauteur du viewport
+  est réécrite dans son `style` : ce sont des mutations d'**attribut**, invisibles pour un
+  observateur `childList`. Or les deux panneaux ne sont pas rendus d'un seul coup, donc le
+  second restait avec son tableau natif (largeurs 845px/833px figées) pour toute la session.
+  D'où `onMutations()` : observer `attributes` (`class`, `style`) en plus de `childList`,
+  filtrer sur la zone utile (les deux cartes ou le troisième menu), regrouper les passages par
+  image (`requestAnimationFrame`) et poser les observateurs **avant** le premier
+  `processAll()` — protégé par un `try/catch` — pour qu'aucune exception les empêche
+  d'exister.
+  ⚠ La mise en page est scopée sur `.pap-dp-panel`, **pas** sur un marqueur de liste
+  (`.pap-dp-list` n'existe plus) : PRONOTE peut remplacer le nœud `.ObjetListe` entre deux
+  rendus, et une liste non marquée doit rester aussi belle que les autres.
+  ⚠ La carte porte le fond, la bordure et le rayon : le titre natif est **dedans**, et le bloc
+  d'état vide est un bloc pointillé interne (pas une seconde carte). Cacher toute la carte
+  « vide » faisait浮动 le titre et collait la pastille d'icône au bord de la colonne.
+  ⚠ Entre `.liste-heriar` et `.liste_content`, la chaîne de flexibles comporte **deux**
+  maillons, dont `div#…_contenuListe_0` qui ne porte AUCUNE classe : viser le maillon par
+  `:has()` (`.liste_zoneFils > div:has(.liste_content)` et `div:has(> .liste_content)`), sinon
+  le viewport reste à 0 de haut. Même piège de largeur : `div#…_Contenu_1` fige 833px en inline
+  sans classe → le remettre à `width: auto` via `.liste_content div`, sinon la grille déborde
+  et la carte affiche une barre de défilement horizontale.
+  La grille à deux colonnes est forcée sur `.PageDonneesEleve` via un sélecteur préfixé par
+  `main.interface_affV_client.pap-dp` (sinon le CSS natif de PRONOTE l'emporte et les deux
+  cartes s'empilent).
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -311,4 +368,27 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     reparti sur une autre page. Vérifier que les deux boutons du second menu (Enregistrer,
     PDF) sont bien visibles en pastille fantôme (désactivés) et que « Consultation
     temporaire » reste masquée, ainsi que la bande de filtres (sélecteur de période seule)
-    collée au second menu. Thème Clair ↔ Sombre.
+     collée au second menu. Thème Clair ↔ Sombre.
+12. Sur `Compétences → Évaluations → Difficultés et points d'appui` : la page doit afficher
+    **deux cartes côte à côte** — « Compétences non maîtrisées : 0 » (pastille `cross` rouge)
+    et « Compétences maîtrisées : 0 » (pastille `check` teal) — le titre étant **dans** la
+    carte, à ~16px de sa bordure (et non collé au bord), et chacune occupée par un bloc vide
+    pointillé qui occupe toute la place restante sous le titre (`ghost`, message
+    « Aucune compétence … maîtrisée », pastilles « Trimestre 1 » **et** « Cycle 4 »), le
+    squelette natif (barre d'outils, colonnes « Items / Évaluations », viewport) devant être
+    invisible. Changer de période PUIS de cycle : les deux pastilles suivent, sans doublon
+    d'icône ni dédoublement du bloc vide. **Les deux cartes doivent être traitées** : si celle
+    de droite affiche encore les colonnes « Items / Évaluations » et une hauteur figée, c'est
+    que le `.vide` n'a pas été vu (mutation d'attribut) — recharger l'extension. Vérifier aussi
+    que rien ne déborde sous le bord bas de l'écran et qu'aucune barre de défilement
+    horizontale n'apparaît dans les cartes.
+    Test de fuite : enchaîner `Mes évaluations` → `Difficultés et points d'appui` 2 fois ; en
+    console, `main` ne doit porter qu'un seul marqueur de page (`pap-ev` OU `pap-dp`, jamais
+    les deux), **chacun** des deux `.PanelDonneesEleveListe` porter `pap-dp-panel` +
+    (`pap-dp-neg` OU `pap-dp-pos`) + `pap-dp-panel-vide` et un `.pap-dp-puce`, et au plus un
+    `.pap-dp-empty` par `.ObjetListe` ; plus aucun `pap-dp-*` après être reparti sur une autre
+    page. Vérifier que les deux boutons du second menu sont
+    visibles en pastille fantôme (désactivés), que « Consultation temporaire » reste masquée,
+    que le panneau « données de la classe » (`#…_pageDonneesClasse`) reste invisible, et
+    qu'aucun bloc ne déborde sous le bord bas de l'écran. Thème Clair ↔ Sombre.
+

@@ -1,0 +1,736 @@
+/* ============================================================
+   PAGE COMPÉTENCES — « DIFFICULTÉS ET POINTS D'APPUI »
+   Cible : page « Compétences → Évaluations → Difficultés et points
+   d'appui » PRONOTE, repérée par son fil d'Ariane
+   h1#breadcrumbBandeau[aria-label="Difficultés et points d'appui"]
+   (la classe .pap-dp est posée par difficultes.js sur le <main>).
+
+   Restyle purement visuel : les DEUX panneaux
+   (.PanelDonneesEleveListe — « Compétences non maîtrisées » et
+   « Compétences maîtrisées »), empilés et figés par PRONOTE, deviennent
+   deux cartes Papillon côte à côte. Chacune est AUTO-SUFFISANTE :
+   le titre natif (« Compétences non maîtrisées : 0 ») reste DANS la
+   carte, avec sa pastille d'icône, et le tableau des compétences
+   (vide sur toutes les périodes testées : PRONOTE le marque .vide et
+   ne rend alors qu'un squelette — barre d'outils, colonnes
+   « Items / Évaluations » et viewport figé à 40px) est remplacé par un
+   bloc d'état vide pointillé, construit par difficultes.js (icône
+   papicon ghost + message + pastilles de période et de cycle).
+
+   ⚠ Les règles de liste sont scopées sur .pap-dp-panel, PAS sur un
+   marqueur posé sur la liste : PRONOTE peut remplacer le nœud
+   .ObjetListe entre deux rendus et ce marqueur manquerait alors, or
+   les deux panneaux doivent rester identiques. Le JS ne pose plus aucun
+   marqueur sur la liste, la mise en page ne s'appuie que sur la carte
+   (et sur la classe .pap-dp-row, uniquement pour les lignes, sans
+   incidence sur la structure).
+
+   Les sélecteurs de période et de cycle du troisième menu, la
+   recherche, le pliage de la liste et les boutons d'enregistrement /
+   PDF du second menu restent natifs.
+
+   ⚠ DOM NON ENCORE CONNU : le contenu d'une ligne de compétence
+   (aucune période n'affiche de compétence). Cette feuille ne style
+   donc que le squelette (cartes, état vide, largeurs figées,
+   en-têtes de colonnes) : le restyle des lignes est à faire d'après
+   un DOM peuplé.
+   ============================================================ */
+
+/* ---------- Hauteur disponible ----------
+   Les deux barres sticky mesurées par header.js (--pap-menu-h /
+   --pap-second-h), la bande de filtres (troisième menu, 96px avec
+   les marges) et les marges de page (10px + 14px). */
+body.papillon-pronote main.interface_affV_client.pap-dp {
+  --pap-dp-h: calc(100vh - var(--pap-menu-h, 60px) - var(--pap-second-h, 54px) - 96px - 24px);
+}
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → on force le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-dp, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-dp) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+/* ============================================================
+   2. Grille des deux cartes
+   PRONOTE empile .SuiviResultatsCompetences > .PageDonnees >
+   .PageDonneesEleve avec des hauteurs calculées en dur : on les rend
+   flexibles et .PageDonneesEleve devient une grille à DEUX colonnes.
+   Les sélecteurs sont préfixés par `main.interface_affV_client.pap-dp`
+   (et non seulement `.pap-dp`) pour outweighir le CSS natif de
+   PRONOTE sur ces conteneurs.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .SuiviResultatsCompetences,
+body.papillon-pronote main.interface_affV_client.pap-dp .PageDonnees,
+body.papillon-pronote main.interface_affV_client.pap-dp .PageDonneesEleve {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .PageDonneesEleve {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
+  grid-auto-flow: column !important;
+  grid-auto-rows: minmax(0, auto) !important;
+  align-items: start !important;
+  justify-content: stretch !important;
+  gap: 14px !important;
+  padding: 10px 12px 14px !important;
+}
+
+/* ============================================================
+   3. Les deux cartes (panneaux de maîtrise)
+   La carte est TOUJOURS une carte, liste vide ou non : c'est elle qui
+   porte le fond, la bordure, le rayon et l'ombre, donc le titre natif
+   (et sa pastille) ne peut pas se retrouver collé au bord.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  /* PRONOTE raisonne avec des blocs positionnés : on neutralise tout
+     positionnement natif qui les sortirait du flux. */
+  position: static !important;
+  float: none !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  /* Hauteur DÉFINIE (et pas seulement max-height) : c'est elle qui
+     donne aux viewports enfants (#…_Zone_1) une taille à laquelle se
+     répartir, donc un vrai défilement à la molette. */
+  height: var(--pap-dp-h) !important;
+  max-height: var(--pap-dp-h) !important;
+  min-height: 0 !important;
+  padding: 14px 16px 16px !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+  border: 1px solid #e7efee !important;
+  border-radius: 25px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .06) !important;
+  overflow: hidden !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  color: #10130f !important;
+}
+
+/* Le wrapper qui contient le .ObjetListe (div#…Instances[…]) : on le
+   rend flexible pour que la liste occupe la hauteur restante. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel > div:not(.BandeauTitreTypeResultats) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ============================================================
+   4. En-tête de carte (« Compétences non maîtrisées : 0 »)
+   Le libellé et le compte restent le texte NATIF de PRONOTE : le JS
+   n'injecte que la pastille d'icône, devant lui.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel > .BandeauTitreTypeResultats {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 16.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+  text-align: left !important;
+  color: #10130f !important;
+}
+
+/* Pastille d'icône : croix pour les compétences non maîtrisées,
+   coche pour les compétences maîtrisées. */
+body.papillon-pronote .pap-dp-puce {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 12px !important;
+  background: #eaf7f4 !important;
+  color: #227e6b !important;
+}
+
+body.papillon-pronote .pap-dp-neg > .BandeauTitreTypeResultats .pap-dp-puce {
+  background: #fdeeec !important;
+  color: #a3342b !important;
+}
+
+body.papillon-pronote .pap-dp-puce svg {
+  width: 19px !important;
+  height: 19px !important;
+  fill: currentColor !important;
+}
+
+/* ============================================================
+   5. La liste (squelette natif PRONOTE)
+   Peinte en blanc avec bordure et ombre par PRONOTE : on la rend
+   transparente pour qu'elle ne double pas la carte. Les règles sont
+   scopées sur .pap-dp-panel et non sur un marqueur posé sur la liste :
+   PRONOTE peut remplacer le nœud .ObjetListe entre deux rendus, ce
+   marqueur manquerait alors et les deux cartes cesseraient d'être
+   identiques.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .ObjetListe {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* ---------- Largeurs figées en inline ----------
+   PRONOTE pose des largeurs en inline sur toute la chaîne de la liste
+   (845px sur .liste_zone et .liste_btnentete, 833px sur la grille et
+   son contenu) : on les rend fluides, sinon la carte déborde
+   horizontalement. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_zone,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_zoneFils,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste-heriar,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_contenu_ligne,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_contenu_cellule,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_contenu_cellule_contenu,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_titre_cellule,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_conteneurCadreSelection {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* PRONOTE fige aussi 833px sur le div#…_Contenu_1, qui ne porte
+   AUCUNE classe et échappe donc à la liste ci-dessus : on remet tout le
+   contenu de la zone à la largeur de la carte, sinon la grille déborde
+   et la carte affiche une barre de défilement horizontale. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content div {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ---------- Chaîne de flexibles jusqu'au viewport ----------
+   La hauteur disponible se propage de la carte au viewport
+   (#…_Zone_1) : chaque maillon est un flexible qui peut rétrécir.
+   Il y a DEUX maillons entre .liste-heriar et .liste_content — le
+   .liste-heriar, puis le div#…_contenuListe_0 qui ne porte AUCUNE
+   classe — d'où les deux sélecteurs : le maillon est désigné par
+   :has() plutôt que par :nth-of-type(), instable (le .sr-only de la
+   grille entre dans le décompte des <div>), et le maillon sans classe
+   par `div:has(> .liste_content)`. En oublier un revient à laisser
+   le viewport à 0 de haut. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_zone,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_zoneFils,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_zoneFils > div:has(.liste_content),
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel div:has(> .liste_content),
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Viewport de liste borné ----------
+   PRONOTE y fige une hauteur inline fixe (40px, ajustée au nombre de
+   lignes) : on la laisse se répartir dans la hauteur restante de la
+   carte (flex: 1 1 auto + min-height: 0), ce qui donne un vrai
+   défilement à la molette DANS la carte — sans calcul en dur, donc
+   sans dérive quand les deux barres sticky changent de hauteur. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style] {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: auto !important;
+  box-sizing: border-box !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #cfd9d5 transparent !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style]::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style]::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style]::-webkit-scrollbar-thumb {
+  background: #cfd9d5 !important;
+  border-radius: 4px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style] {
+  scrollbar-color: #2f3d38 transparent !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content > div[style]::-webkit-scrollbar-thumb {
+  background: #2f3d38 !important;
+  background-clip: padding-box !important;
+}
+
+/* Barre de défilement native de PRONOTE : on la neutralise sans la
+   retirer du DOM (son JS s'en sert pour mesurer les tailles). */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_cont_btnscroll {
+  display: none !important;
+}
+
+/* ---------- Grille à deux colonnes ----------
+   La page a deux colonnes (« Items » et « Évaluations »), figées en
+   inline à 417px/416px avec une largeur de 833px : on les remplace par
+   deux fractions fluides. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_content_lignes {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
+  gap: 0 10px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  background: transparent !important;
+}
+
+/* ---------- Barre d'outils de la liste (recherche, tout déplier) ---- */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 0 0 auto !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .avecFond {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 0 !important;
+  border-radius: 300px !important;
+  background: #f1f1f1 !important;
+  border: 1px solid #e7efee !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  cursor: pointer !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage:not(.btnImageDisable):hover,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .avecFond:not(.btnImageDisable):hover {
+  background: #ddf2ec !important;
+  border-color: #81c9b6 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage:active {
+  transform: scale(.94) !important;
+}
+
+/* Désactivé (liste vide) : estompé mais visible. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImageDisable {
+  opacity: .55 !important;
+  cursor: default !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage svg,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .avecFond svg,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .icone-svg {
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ---------- En-têtes de colonnes (« Items », « Évaluations ») -------- */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 12px 6px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e7efee !important;
+  box-shadow: none !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  text-align: left !important;
+  color: #8a9b95 !important;
+}
+
+/* L'icône de diagramme de la colonne « Évaluations » reste visible. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .btnImage,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .icone-svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-height: 0 !important;
+  border-radius: 8px !important;
+  background: #eaf7f4 !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #227e6b !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .btnImage svg,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .icone-svg svg {
+  width: 13px !important;
+  height: 13px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ============================================================
+   6. Lignes de compétence
+   CONTENU NON ENCORE CONNU (aucune période n'affiche de compétence) :
+   habillage générique de pilule, à compléter d'après un DOM peuplé.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row {
+  /* La ligne est un maillon de .liste_content_lignes (grille à deux
+     colonnes) : sans cela elle n'occupe que la colonne 1 et la pilule
+     s'arrête à la moitié de la largeur de la carte. */
+  grid-column: 1 / -1 !important;
+  min-height: 0 !important;
+  margin: 3px 0 !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  transition: background-color .15s ease !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_conteneurCadreSelection,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_contenu_cellule,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_contenu_cellule_contenu,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_contenu_ligne {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row:hover {
+  background: #f2f6f5 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_contenu_ligne {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  color: #10130f !important;
+}
+
+/* ============================================================
+   7. État vide
+   Le tableau vide de PRONOTE ne porte aucun message : le bloc vide
+   pointillé est entièrement construit par difficultes.js (icône +
+   message + pastilles de période et de cycle). Il se place DANS la
+   carte, sous le titre. Tout le squelette natif est masqué — barre
+   d'outils, colonnes ET .liste_zone, qui partageait sinon la hauteur
+   avec le bloc vide et le repoussait vers le bas de la carte.
+   ============================================================ */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel-vide .liste_btnentete,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel-vide .liste-heriar,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel-vide .liste_zone,
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel-vide .liste_cont_btnscroll {
+  display: none !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+  /* flex:1 pour que le bloc vide prenne la hauteur restante de la
+     carte (titre compris), quelle que soit la taille de l'autre. */
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 160px !important;
+  margin: 0 !important;
+  padding: 28px 20px !important;
+  border: 1.5px dashed #cfe0da !important;
+  border-radius: 20px !important;
+  background: #f7faf9 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 0 !important;
+  color: #b9cdc7 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty-icon svg {
+  width: 44px !important;
+  height: 44px !important;
+  fill: currentColor !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty-msg {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: #4a5a55 !important;
+}
+
+/* Pastilles de contexte (« Trimestre 1 », « Cycle 4 »), lues dans le
+   troisième menu : le tableau vide de PRONOTE n'en contient aucune. */
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-meta-pill {
+  display: inline-block !important;
+  margin: 0 !important;
+  padding: 3px 12px !important;
+  border-radius: 300px !important;
+  background: #ffffff !important;
+  border: 1px solid #e7efee !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  color: #5d6f69 !important;
+  white-space: nowrap !important;
+}
+
+/* ============================================================
+   8. Boutons du second menu (Enregistrer / Générer le PDF)
+   Ce sont des <i class="btnImage"> / <i class="btnImageDisable"> :
+   ni <a>, ni <button>, ni [role=button], donc la règle globale de
+   header.css ne les touche pas et ils resteraient invisibles
+   (pastille fantôme). Ils sont désactivés tant qu'aucune compétence
+   n'est sélectionnée.
+
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième porte la
+   bannière « Consultation temporaire » que PRONOTE masque avec
+   style="display:none", et un display:flex !important la ferait
+   réapparaître.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .icone-svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 0 !important;
+  border-radius: 300px !important;
+  background: #f1f1f1 !important;
+  border: 1px solid #e7efee !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .icone-svg:hover {
+  background: #ddf2ec !important;
+  border-color: #81c9b6 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImage:active {
+  transform: scale(.94) !important;
+}
+
+/* Désactivé : estompé mais visible. */
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes [aria-disabled="true"].btnImage {
+  opacity: .55 !important;
+  cursor: default !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .icone-svg,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes svg path,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes svg use,
+body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes svg g {
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ============================================================
+   9. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel > .BandeauTitreTypeResultats {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-dp-puce {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-dp-neg > .BandeauTitreTypeResultats .pap-dp-puce {
+  background: #3a211e !important;
+  color: #f2a09a !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel {
+  border-bottom-color: #2a3531 !important;
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .btnImage,
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_gridTitre_cel .icone-svg {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row:hover {
+  background: #202926 !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-row .liste_contenu_ligne {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty {
+  border-color: #31403a !important;
+  background: #1e2623 !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty-icon {
+  color: #46574f !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-empty-msg {
+  color: #d5e3de !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-meta-pill {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage,
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .avecFond {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .btnImage:not(.btnImageDisable):hover,
+html.papillon-dark body.papillon-pronote main.interface_affV_client.pap-dp .pap-dp-panel .liste_btnentete .avecFond:not(.btnImageDisable):hover {
+  background: #14352c !important;
+  border-color: #29947a !important;
+  color: #35bba0 !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImageDisable,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .icone-svg {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-dp) .menu-commandes .icone-svg:hover {
+  background: #14352c !important;
+  border-color: #29947a !important;
+  color: #35bba0 !important;
+}
