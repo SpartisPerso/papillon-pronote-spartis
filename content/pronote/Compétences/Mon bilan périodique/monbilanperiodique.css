@@ -1,0 +1,221 @@
+/* ============================================================
+   PAGE COMPÉTENCES — « MON BILAN PÉRIODIQUE » façon Papillon
+   Cible : page « Compétences → Bilan périodique → Mon bilan
+   périodique » PRONOTE, repérée par son fil d'Ariane
+   h1#breadcrumbBandeau[aria-label="Mon bilan périodique"]
+   (la classe .pap-bp est posée par monbilanperiodique.js sur le
+   <main>).
+
+   Restyle purement visuel : le message d'attente devient une carte
+   vide Papillon à pointillés. Le sélecteur de période du troisième
+   menu est déjà stylé par header.css, et les boutons
+   d'enregistrement / PDF sont traités plus bas (section 4).
+
+   ⚠ Le DOM est presque identique à celui des pages Notes
+   (« Mon relevé de notes », « Mon bulletin de notes », « Bulletin
+   de ma classe ») : cette feuille ne doit toucher QUE les classes
+   pap-bp-*, jamais pap-rlv-* / pap-bul-* / pap-bc-*, ni les classes
+   de « Bilan périodique de ma classe » (page voisine). Elle ne doit
+   surtout pas révéler ce que PRONOTE masque (#…_PiedBull, le bloc
+   .Table de 70rem, le #…_conteneur-tabs) — cf. section 3.
+   ============================================================ */
+
+/* ---------- Hauteur disponible ----------
+   Budget vertical calqué sur Releve / Mon bulletin / Bulletin de ma
+   classe : les deux barres sticky mesurées par header.js, la bande
+   de période (troisième menu) et les marges de la page. */
+body.papillon-pronote main.interface_affV_client.pap-bp {
+  --pap-bp-h: calc(100vh - var(--pap-menu-h, 60px) - var(--pap-second-h, 54px) - 96px);
+}
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → forcer le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-bp, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-bp) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-bp {
+  background-color: transparent !important;
+}
+
+/* PRONOTE pose un height:calc(100% - 10px) inline sur le div.Espace
+   qui enveloppe le tableau de la page : sans cela la carte vide ne
+   peut pas occuper la hauteur disponible. */
+body.papillon-pronote main.interface_affV_client.pap-bp > div[style*="height"] {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-bp .Espace {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Chaîne de conteneurs qui porte la carte vide. Contrairement aux
+   pages Notes, le <div role="note"> est ici imbriqué dans
+   .Espace > .Table.BorderBox > .EspaceBas : on ne libère la hauteur
+   que sur CETTE chaîne, via :has(), pour ne pas toucher aux
+   .EspaceBas du bilan publié (une fois publié, .pap-bp-empty a
+   disparu → plus rien ne matche, aucune règle ne s'applique). */
+body.papillon-pronote main.interface_affV_client.pap-bp .Espace:has(.pap-bp-empty) > .Table.BorderBox,
+body.papillon-pronote main.interface_affV_client.pap-bp .Espace .EspaceBas:has(> .pap-bp-empty) {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+/* ============================================================
+   2. Carte d'état vide
+   PRONOTE n'affiche qu'un <p> centré ; on l'encadre en carte
+   pointillée centrée verticalement dans la page. La classe
+   .pap-bp-empty est posée par monbilanperiodique.js sur le
+   <div role="note">.
+   ============================================================ */
+body.papillon-pronote .pap-bp-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  min-height: var(--pap-bp-h) !important;
+  margin: 10px 12px 14px !important;
+  padding: 26px 18px !important;
+  border: 1.5px dashed var(--papillon-border, #e7efee) !important;
+  border-radius: 25px !important;
+  background: var(--papillon-surface, #ffffff) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+}
+
+body.papillon-pronote .pap-bp-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  color: #c8d6d1 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .pap-bp-empty-icon svg {
+  width: 48px !important;
+  height: 48px !important;
+  fill: currentColor !important;
+}
+
+/* Le <p> natif porte .p-y-xl / .m-bottom-l / .text-center : on
+   annule ces utilitaires pour laisser la carte gérer l'espacement. */
+body.papillon-pronote .pap-bp-empty > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: var(--papillon-text, #10130f) !important;
+}
+
+body.papillon-pronote .pap-bp-empty-date {
+  display: inline-block !important;
+  margin-left: 4px !important;
+  padding: 2px 10px !important;
+  border-radius: 300px !important;
+  background: #eaf7f4 !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #227e6b !important;
+  white-space: nowrap !important;
+}
+
+/* ============================================================
+   3. Bilan publié
+   NON traité pour l'instant : tant qu'il n'est pas publié, PRONOTE
+   laisse le #…_conteneur-tabs, le #…_bull_legende, la div
+   #…_Instances[2] et son #…_PiedBull en display:none (et leurs
+   .EspaceBas vides), ainsi que le second .Table de 70rem (graphe /
+   légende). Ne surtout pas forcer leur display ici, sous peine
+   d'afficher des coquilles vides sous la carte. À faire quand un
+   bilan sera publié, sur le modèle de la section 3 de releve.css.
+   ============================================================ */
+
+/* ============================================================
+   4. Boutons du second menu (enregistrer / PDF)
+   Ils sont désactivés tant que le bilan n'est pas publié : on les
+   pose en cercles fantômes pour qu'ils ne cassent pas la barre.
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième contient
+   la bannière rouge « Consultation temporaire » que PRONOTE masque
+   avec style="display:none", et un display:flex !important ici la
+   ferait réapparaître. On n'agit donc que sur les <i> de bouton,
+   déjà visibles, et sur leurs SVG.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImageDisable {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 1px solid #e7efee !important;
+  opacity: .5 !important;
+  transition: background-color .15s ease, opacity .15s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #f2f6f5 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes svg path {
+  fill: #5d6b66 !important;
+  stroke: #5d6b66 !important;
+}
+
+/* ============================================================
+   5. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-bp-empty {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-bp-empty > p {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-bp-empty-date {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes svg,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes svg path {
+  fill: #93a79f !important;
+  stroke: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImageDisable {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-bp) .menu-commandes .btnImage:not(.btnImageDisable):hover {
+  background: #202926 !important;
+}

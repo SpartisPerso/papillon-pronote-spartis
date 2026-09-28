@@ -80,8 +80,18 @@ content/pronote/Compétences/Difficultés et points d'appui/  Page « Compétenc
                            pointillé **à l'intérieur** de la carte (`ghost` + message +
                            pastilles de période ET de cycle). Boutons du second menu.
                            Classes `pap-dp-*`. Fichiers en ASCII (`difficultes.js` /
-                           `difficultes.css`). Contenu des lignes non traité (DOM inconnu :
-                           le tableau est `vide` sur toutes les périodes de test).
+                            `difficultes.css`). Contenu des lignes non traité (DOM inconnu :
+                            le tableau est `vide` sur toutes les périodes de test).
+content/pronote/Compétences/Mon bilan périodique/  Page « Compétences → Bilan périodique →
+                           Mon bilan périodique » (fil d'Ariane « Mon bilan
+                           périodique ») : la carte d'état vide pointillée
+                           (« Le bulletin de compétences sera publié à partir
+                           du … », icône `graduation-hat` + date en pastille) et
+                           les boutons du second menu. Classes `pap-bp-*`.
+                           Fichiers en ASCII (`monbilanperiodique.js` /
+                           `monbilanperiodique.css`). Bilan publié non traité
+                           (DOM inconnu : aucun bilan de test n'est publié).
+
 
 
 options/                   Page d'options (thème Clair / Sombre)
@@ -251,6 +261,27 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   La grille à deux colonnes est forcée sur `.PageDonneesEleve` via un sélecteur préfixé par
   `main.interface_affV_client.pap-dp` (sinon le CSS natif de PRONOTE l'emporte et les deux
   cartes s'empilent).
+- `Compétences/Mon bilan périodique` : ancre **égalité stricte** sur
+  `aria-label="Mon bilan périodique"`, classes `pap-bp-*`, **jamais** `pap-bul-*` ni
+  `pap-bc-*`. Les huit ancres (5 Notes + `mes évaluations` + `Difficultés et points
+  d'appui` + celle-ci) restent mutuellement exclusives. La page voisine « Bilan
+  périodique de ma classe » (même rubrique, DOM quasi identique) ne doit **pas** être
+  attrapée : ne pas élargir l'ancre en regex ni en préfixe.
+  ⚠ Contrairement aux pages Notes, le `<div role="note">` du message n'est **pas** un enfant
+  direct de `.Espace` : la chaîne est `.Espace > .Table.BorderBox > .EspaceBas >
+  [role="note"]` → le sélecteur de l'état vide est `.Espace [role="note"]` (descendant), et
+  non `.Espace > [role="note"]` comme dans `bulletin.js` / `bulletinclasse.js`.
+  Le `<main>` contient en outre un **deuxième** `<div role="note">` (bloc `.Table` de
+  `70rem`, graphe / légende, enfant direct de `<main>`, `<p>` vide) : exclu par la borne
+  `.Espace` et par le test de texte.
+  Le masquage « rien à afficher » peut porter sur le `note` **ou** sur un de ses parents
+  (`.EspaceBas`, `.Espace`) : `isHidden()` remonte la chaîne jusqu'au `<main>`. Et à
+  l'inverse des modules Notes, un message qui disparaît (bilan publié) **démarque** la
+  carte au lieu de la laisser en place, sinon `display:flex !important` afficherait une
+  carte vide à côté du bilan. Seule la chaîne qui porte `.pap-bp-empty` est libérée en
+  hauteur (`:has()`), jamais les `.EspaceBas` du bilan publié.
+  Bilan publié (`#…_PiedBull` et ses `.EspaceBas`, `#…_conteneur-tabs`, `#…_bull_legende`)
+  non traité : tous en `display:none` en ligne, ne pas les révéler.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -390,5 +421,20 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     page. Vérifier que les deux boutons du second menu sont
     visibles en pastille fantôme (désactivés), que « Consultation temporaire » reste masquée,
     que le panneau « données de la classe » (`#…_pageDonneesClasse`) reste invisible, et
-    qu'aucun bloc ne déborde sous le bord bas de l'écran. Thème Clair ↔ Sombre.
+     qu'aucun bloc ne déborde sous le bord bas de l'écran. Thème Clair ↔ Sombre.
+13. Sur `Compétences → Bilan périodique → Mon bilan périodique` : la page doit n'afficher
+    qu'**une** carte d'état vide pointillée — « Le bulletin de compétences sera publié à
+    partir du 23/11/26 », icône `graduation-hat` et **date en pastille** teal — occupant la
+    hauteur disponible (rien ne doit déborder sous le bord bas de l'écran), et les deux
+    boutons du second menu (Enregistrer, PDF) en pastilles fantômes désactivées. Changer de
+    période : le message (et donc la date) peut changer, sans doublon d'icône. Test de fuite :
+    enchaîner `Difficultés et points d'appui` → `Mon bilan périodique` 2 fois, puis aller sur
+    la page voisine `Bilan périodique de ma classe` et revenir ; en console, `main` ne doit
+    porter que `pap-bp` (jamais `pap-dp`, `pap-ev`, `pap-rlv`, `pap-bul`, `pap-bc`), et
+    `main .Espace [role="note"]` ne porter qu'un seul `pap-bp-empty` (avec un unique
+    `.pap-bp-empty-date` et une seule icône). Après être reparti sur une autre page : plus
+    aucun `pap-bp-*`. Vérifier que « Consultation temporaire » reste masquée, que le bloc
+    `70rem` et le `#…_PiedBull` restent invisibles, et que la bande de filtres (sélecteur de
+    période seule) est collée au second menu. Thème Clair ↔ Sombre.
+
 
