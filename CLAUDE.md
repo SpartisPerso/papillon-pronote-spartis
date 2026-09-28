@@ -100,6 +100,23 @@ content/pronote/Compétences/Bilan périodique de ma classe/  Page voisine
                            + date en pastille) et les boutons du second menu. Classes
                            `pap-bpc-*`. Fichiers en ASCII
                            (`bilanperiodiqueclasse.js` / `.css`).
+content/pronote/Compétences/Évaluations par compétence/  Page « Compétences → Bilan par
+                           domaine → Évaluations par compétence » (fil d'Ariane
+                           STRICTEMENT « Évaluations par compétence ») : la grille
+                           BilanParDomaine Items / Niveau / Validé le en carte Papillon
+                           pleine largeur. PRONOTE n'y affiche AUCUN titre (le libellé
+                           vit dans le `sr-only` `#…_labelListe` du `aria-labelledby` de
+                           la grille) : le JS injecte titre « Évaluations par
+                           compétence » + compteur « N éléments » + pastille de
+                           compétence (lue dans le combiné
+                           `[aria-label="Sélectionnez une compétence"]` du troisième
+                           menu). Chaque ligne de données est un groupe de TROIS
+                           `.liste_celluleGrid` adjacents (une par colonne), les lignes
+                           de domaine sont dépliables (cylindre de dépliage) et le DOM
+                           fige des largeurs inline (1912px/1900px/1685px, grille
+                           1717px 87px 96px, `grid-column:1/3 3/5 5/7`) à rendre
+                           fluides. Classes `pap-bpd-*`. Fichiers en ASCII
+                           (`evaluationsparcompetence.js` / `.css`).
 
 
 
@@ -273,9 +290,9 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   cartes s'empilent).
 - `Compétences/Mon bilan périodique` : ancre **égalité stricte** sur
   `aria-label="Mon bilan périodique"`, classes `pap-bp-*`, **jamais** `pap-bul-*` ni
-  `pap-bc-*` ni `pap-bpc-*`. Les neuf ancres (5 Notes + `mes évaluations` + `Difficultés
-  et points d'appui` + `Bilan périodique de ma classe` + celle-ci) restent mutuellement
-  exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
+  `pap-bc-*` ni `pap-bpc-*`. Les dix ancres (5 Notes + `mes évaluations` + `Difficultés
+  et points d'appui` + `Bilan périodique de ma classe` + `Évaluations par compétence` +
+  celle-ci) restent mutuellement exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
   identique) ne doit **pas** être attrapée : ne pas élargir l'ancre en regex ni en
   préfixe.
   ⚠ Contrairement aux pages Notes, le `<div role="note">` du message n'est **pas** un enfant
@@ -295,7 +312,7 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   non traité : tous en `display:none` en ligne, ne pas les révéler.
 - `Compétences/Bilan périodique de ma classe` : ancre **égalité stricte** sur
   `aria-label="Bilan périodique de ma classe"`, classes `pap-bpc-*`, **jamais** `pap-bp-*`
-  ni `pap-bc-*`. Les neuf ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
+  ni `pap-bc-*`. Les dix ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
   en regex ni en préfixe « Bilan périodique… », sinon la page voisine « Mon bilan
   périodique » se marque aussi (deux cartes vides superposées).
   ⚠ `pap-bpc-*` (bilan périodique **de ma classe**) et `pap-bc-*` (Notes → « Bulletin de
@@ -308,6 +325,34 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   `user.svg` (et non `graduation-hat.svg`, réservé au bilan individuel), et le
   `#…_PiedBull` masqué ne contient que **cinq** `.EspaceBas` (au lieu de dix) — sans
   conséquence tant que le bilan publié n'est pas traité.
+- `Compétences/Évaluations par compétence` : ancre **égalité stricte** sur
+  `aria-label="Évaluations par compétence"`, classes `pap-bpd-*`, **jamais** `pap-ev-*` ni
+  `pap-dp-*` ni `pap-bp-*` ni `pap-bpc-*`. Les dix ancres Compétences/Notes restent
+  mutuellement exclusives ; ne **pas** élargir l'ancre en regex (elle ressemblerait à
+  « Détail de mes évaluations » / « Mes évaluations » de `mesevaluations.js`).
+  ⚠ DOM inédit : ici une « ligne » de la grille n'est PAS un élément — chaque ligne est un
+  groupe de TROIS `.liste_celluleGrid` adjacents (une par colonne Items/Niveau/Validé le),
+  FRÈRES consécutifs de la grille (survol/sélection de ligne via `+ .pap-bpd-cell +
+  .pap-bpd-cell`). La ligne de domaine est détectée par son cylindre de dépliage
+  (`.liste_contenu_cellule_deploiement`) dans la première cellule ; la sélection active est
+  `.selected` sur LES TROIS cellules (pas `:has([role=démarque])`).
+  ⚠ PRONOTE fige des largeurs/hauteurs en inline à TOUTE la chaîne (largeur 1912px sur
+  `.liste_btnentete`/`.liste_zone`/`.liste_zoneFils`, grille `grid-template-columns:1717px
+  87px 96px` avec `grid-column:1/3 3/5 5/7` sur les cellules ET l'en-tête, largeurs 1685/1688/
+  70/80px, viewport `height:670px`) : remettre `width:auto` + `grid-column:auto` partout et
+  `flex` la chaîne `.liste_zone → .liste_zoneFils → .liste-heriar (×2) → div#…_contenuListe_0
+  → .liste_content → #…_Zone_1`, sinon la carte reste large et la liste déborde sous le bas
+  de l'écran (mêmes recettes que `difficultes` / `anciensbulletins`). La chaîne vide la mode
+  NATIVE : le viewport est #…_Zone_1 uniquement (pas #…_Contenu_1, div[style] descendant).
+  ⚠ Aucun titre n'est affiché : `.pap-bpd-title` injecté depuis le `sr-only` `#…_labelListe`
+  (garde `pap-bpd-*` posée par le JS, `if (el.textContent !== txt)` obligatoire).
+  ⚠ PRONOTE pose aussi un bloc final `div[style="height:80px"]` avec deux `.EspaceHaut` (la
+  note CECRL en `display:none` — ne jamais la révéler) : le replier via
+  `.EspaceHaut:empty`. Le troisième menu porte une checkbox
+  `label.iecb` (SANS `.as-chips`) « Uniquement les éléments avec évaluations » : pastille
+  via `:has(input:checked)`, sans jamais toucher au display des trois SVGs internes
+  (PRONOTE n'en montre qu'un selon `.on`/`.off`). Le sélecteur de cycle est désactivé
+  (`aria-disabled="true"`) : ne pas le réveiller.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -476,5 +521,25 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     temporaire » reste masquée, que le bloc `70rem` et le `#…_PiedBull` (à ses **cinq**
     `.EspaceBas`) restent invisibles, et que la bande de filtres (sélecteur de période seule)
     est collée au second menu. Thème Clair ↔ Sombre.
+15. Sur `Compétences → Bilan par domaine → Évaluations par compétence` : la page doit
+    afficher une seule carte pleine largeur avec le titre injecté « Évaluations par
+    compétence », un compteur (« 16 éléments » selon le nombre d'items) et la pastille de la
+    compétence courante (`D1.2 - Langues étrangères - ANGLAIS LV1`), une en-tête de colonnes
+    douce (Items / Niveau / Validé le), des lignes de DOMAINE en gras sur pastille teal claire
+    avec chevron teal et des items en texte naturel. Le défilement doit rester DANS la carte
+    (rien ne déborde sous le bord bas de l'écran, pas de barre horizontale). Survoler une
+    ligne : toute la ligne se teinte ; cliquer un item : la ligne sélectionnée reste teintée
+    (`.pap-bpd-cell.selected`). Déplier un domaine : les items enfants s'affichent sans
+    doublon. Changer de compétence ou d'évaluation dans le troisième menu : le compteur et la
+    pastille de compétence suivent, la checkbox « Uniquement les éléments avec évaluations »
+    (pastille teal quand cochée) filtre, le sélecteur de cycle reste estompé (désactivé).
+    Test de fuite : enchaîner `Difficultés et points d'appui` → `Évaluations par compétence`
+    → `Bilan périodique de ma classe` 2 fois ; en console, `main` ne doit porter qu'UN seul
+    marqueur de page (`pap-bpd` OU `pap-dp` OU `pap-bpc`, jamais deux), le `.ObjetListe` qu'un
+    seul `pap-bpd-list`, et plus aucun `pap-bpd-*` après être reparti sur une autre page.
+    Vérifier que la note CECRL reste masquée, que le `#…_message` reste masqué, que les deux
+    boutons du second menu sont en pastilles fantômes (désactivés), que « Consultation
+    temporaire » reste masquée, et que la bande de filtres est collée au second menu.
+    Thème Clair ↔ Sombre.
 
 
