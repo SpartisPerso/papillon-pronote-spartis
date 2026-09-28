@@ -57,7 +57,18 @@ content/pronote/Notes/Anciens bulletins/     Page « Notes → Bulletins → Anc
                            ligne, chevron de dépliage teal, libellé `.sr-only` révélé en
                            titre de carte) + la POP-UP de dépôt du PDF
                            (`.ObjetFenetre_SelectionClouds_racine`). Classes `pap-ab-*`.
-                           Fichiers en ASCII (`anciensbulletins.js` / `.css`).
+                            Fichiers en ASCII (`anciensbulletins.js` / `.css`).
+content/pronote/Compétences/mes évaluations/  Page « Compétences → Évaluations → Mes
+                           évaluations » (fil d'Ariane « Détail de mes évaluations ») :
+                           le widget `.InterfaceDernieresNotes` en deux cartes
+                           (liste / détail), carte d'état vide pointillée
+                           (« Aucune évaluation disponible pour cette période »,
+                           icône `ghost` + période en pastille), boutons du second
+                           menu. Classes `pap-ev-*`. Fichiers en ASCII
+                           (`mesevaluations.js` / `mesevaluations.css`). Lignes
+                           d'évaluation et détail d'une évaluation sélectionnée non
+                           traités (DOM inconnu : aucune période de test n'en affiche).
+
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -169,6 +180,20 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   `.liste_btnentete` (avec un `.pap-ab-count` et une `.pap-ab-trim` « T1 » par trimestre). Ancre
   **égalité stricte** sur `aria-label="Anciens bulletins"`. Le troisième menu y est **vide et
   masqué** (`nav#ligne_bandeau` en `display:none`) : ne jamais le styler.
+- `Compétences/mes évaluations` : cette page réutilise le **widget** de `Notes/Mes Notes`
+  (même div racine `.InterfaceDernieresNotes`, mêmes `section.ListeDernieresNotes` /
+  `section.Zone-DetailsNotes`, mêmes largeurs inline `--liste-width:625px` /
+  `--detail-width:600px`) mais pour les évaluations par compétence, avec un fil d'Ariane
+  différent (`aria-label="Détail de mes évaluations"`) → ancre **égalité stricte** et
+  classes `pap-ev-*`, et **jamais** `pap-mn-*`. Les six ancres (5 Notes + celle-ci) restent
+  mutuellement exclusives. Comme `MesNotes.js` ne dé-classe pas ses marques, une
+  navigation depuis « Mes notes » peut laisser `.pap-mn` sur le widget : vérifier en console
+  que `main` ne porte **que** `pap-ev`.
+  Tant qu'aucune période n'affiche d'évaluation, seul le squelette est restylé (cartes,
+  largeurs, état vide) : la colonne de détail ne contient qu'un `&nbsp;` et est donc
+  masquée (`.pap-ev-detail-vide`, la grille repassant à une colonne). Les blocs masqués en
+  `visibility:hidden` du troisième menu (tri « Par ordre chronologique / Par matière »,
+  bouton « Légende ») sont déjà retirés par `header.css` — ne pas refaire la règle.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -276,3 +301,14 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
    plus aucun `pap-ab-fenetre` dans `#zone_fenetre`. Vérifier que le troisième menu vide
    (`nav#ligne_bandeau` en `display:none`) n'apparaît pas, que « Consultation temporaire »
    reste masquée, et que rien ne déborde sous le bord bas de l'écran.
+11. Sur `Compétences → Évaluations → Mes évaluations` : la page doit n'afficher qu'**une**
+    carte pleine largeur — l'état vide pointillé « Aucune évaluation disponible pour cette
+    période », icône `ghost` et **période en pastille** (« Trimestre 1 ») — sans colonne de
+    détail vide à côté (`.pap-ev-detail-vide` en console). Changer de période : la pastille
+    suit le sélecteur du troisième menu, sans doublon d'icône. Test de fuite : enchaîner
+    `Notes → Mes notes` → `Mes évaluations` 2 fois ; en console, `main` ne doit porter que
+    `pap-ev` (jamais `pap-mn`, ni `pap-rlv`/`pap-bul`), et plus aucun `pap-ev-*` après être
+    reparti sur une autre page. Vérifier que les deux boutons du second menu (Enregistrer,
+    PDF) sont bien visibles en pastille fantôme (désactivés) et que « Consultation
+    temporaire » reste masquée, ainsi que la bande de filtres (sélecteur de période seule)
+    collée au second menu. Thème Clair ↔ Sombre.
