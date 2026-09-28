@@ -1,7 +1,7 @@
 # Papillon — Portail ENT
 
 Extension Chrome (Manifest V3) qui refond les pages scolaires avec le design de l'application
-[Papillon](https://papillon.beta.gouv.fr/) :
+[Papillon](https://papillon.bzh/) :
 la page de connexion du portail ENT **Skolengo CAS** (`cas.ent.auvergnerhonealpes.fr`),
 la page de connexion **EduConnect** (`educonnect.education.gouv.fr`) et l'espace **PRONOTE**
 (`*.index-education.net/pronote`).
