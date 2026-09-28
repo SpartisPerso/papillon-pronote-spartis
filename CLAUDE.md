@@ -89,8 +89,18 @@ content/pronote/Compétences/Mon bilan périodique/  Page « Compétences → Bi
                            du … », icône `graduation-hat` + date en pastille) et
                            les boutons du second menu. Classes `pap-bp-*`.
                            Fichiers en ASCII (`monbilanperiodique.js` /
-                           `monbilanperiodique.css`). Bilan publié non traité
-                           (DOM inconnu : aucun bilan de test n'est publié).
+                            `monbilanperiodique.css`). Bilan publié non traité
+                            (DOM inconnu : aucun bilan de test n'est publié).
+content/pronote/Compétences/Bilan périodique de ma classe/  Page voisine
+                           « Compétences → Bilan périodique → Bilan périodique de ma
+                           classe » (fil d'Ariane « Bilan périodique de ma classe ») :
+                           quasi le même DOM que « Mon bilan périodique », donc
+                           même carte d'état vide pointillée (« Le bulletin de
+                           compétences sera publié à partir du … », **icône `user`**
+                           + date en pastille) et les boutons du second menu. Classes
+                           `pap-bpc-*`. Fichiers en ASCII
+                           (`bilanperiodiqueclasse.js` / `.css`).
+
 
 
 
@@ -263,10 +273,11 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   cartes s'empilent).
 - `Compétences/Mon bilan périodique` : ancre **égalité stricte** sur
   `aria-label="Mon bilan périodique"`, classes `pap-bp-*`, **jamais** `pap-bul-*` ni
-  `pap-bc-*`. Les huit ancres (5 Notes + `mes évaluations` + `Difficultés et points
-  d'appui` + celle-ci) restent mutuellement exclusives. La page voisine « Bilan
-  périodique de ma classe » (même rubrique, DOM quasi identique) ne doit **pas** être
-  attrapée : ne pas élargir l'ancre en regex ni en préfixe.
+  `pap-bc-*` ni `pap-bpc-*`. Les neuf ancres (5 Notes + `mes évaluations` + `Difficultés
+  et points d'appui` + `Bilan périodique de ma classe` + celle-ci) restent mutuellement
+  exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
+  identique) ne doit **pas** être attrapée : ne pas élargir l'ancre en regex ni en
+  préfixe.
   ⚠ Contrairement aux pages Notes, le `<div role="note">` du message n'est **pas** un enfant
   direct de `.Espace` : la chaîne est `.Espace > .Table.BorderBox > .EspaceBas >
   [role="note"]` → le sélecteur de l'état vide est `.Espace [role="note"]` (descendant), et
@@ -282,6 +293,21 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   hauteur (`:has()`), jamais les `.EspaceBas` du bilan publié.
   Bilan publié (`#…_PiedBull` et ses `.EspaceBas`, `#…_conteneur-tabs`, `#…_bull_legende`)
   non traité : tous en `display:none` en ligne, ne pas les révéler.
+- `Compétences/Bilan périodique de ma classe` : ancre **égalité stricte** sur
+  `aria-label="Bilan périodique de ma classe"`, classes `pap-bpc-*`, **jamais** `pap-bp-*`
+  ni `pap-bc-*`. Les neuf ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
+  en regex ni en préfixe « Bilan périodique… », sinon la page voisine « Mon bilan
+  périodique » se marque aussi (deux cartes vides superposées).
+  ⚠ `pap-bpc-*` (bilan périodique **de ma classe**) et `pap-bc-*` (Notes → « Bulletin de
+  ma classe ») ne sont **pas** interchangeables, mais ils ne se recoupent **pas** non plus :
+  ce sont deux jetons de classe distincts, donc `.pap-bc-empty` ne matche pas
+  `class="pap-bpc-empty"` et inversement. Ne jamais « raccourcir » `pap-bpc-*` en `pap-bc-*`
+  (le CSS de l'une styliserait alors la page de l'autre).
+  Le DOM est celui de « Mon bilan périodique », à deux détails près : le message est
+  identique (« Le bulletin de compétences sera publié à partir du … ») mais l'icône est
+  `user.svg` (et non `graduation-hat.svg`, réservé au bilan individuel), et le
+  `#…_PiedBull` masqué ne contient que **cinq** `.EspaceBas` (au lieu de dix) — sans
+  conséquence tant que le bilan publié n'est pas traité.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -436,5 +462,19 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     aucun `pap-bp-*`. Vérifier que « Consultation temporaire » reste masquée, que le bloc
     `70rem` et le `#…_PiedBull` restent invisibles, et que la bande de filtres (sélecteur de
     période seule) est collée au second menu. Thème Clair ↔ Sombre.
+14. Sur `Compétences → Bilan périodique → Bilan périodique de ma classe` : mêmes
+    vérifications que pour « Mon bilan périodique », avec l'icône `user` (et non
+    `graduation-hat`) et le même message d'attente. Test de fuite : enchaîner
+    `Mon bilan périodique` → `Bilan périodique de ma classe` 2 fois, puis aller sur la page
+    voisine et revenir ; en console, `main` ne doit porter que `pap-bpc` (jamais `pap-bp`,
+    `pap-dp`, `pap-ev`, `pap-rlv`, `pap-bul`, `pap-bc`), et `main .Espace [role="note"]` ne
+    porter qu'un seul `pap-bpc-empty` (avec un unique `.pap-bpc-empty-date` et une seule
+    icône). ⚠ Vérifier aussi, sur cette page, que rien ne prend la feuille de style de
+    `Notes → Bulletin de ma classe` (`.pap-bc`) : les deux pages « de ma classe » sont
+    ailleurs dans l'arborescence, donc ne pas les confondre à la navigation. Après être
+    reparti sur une autre page : plus aucun `pap-bpc-*`. Vérifier que « Consultation
+    temporaire » reste masquée, que le bloc `70rem` et le `#…_PiedBull` (à ses **cinq**
+    `.EspaceBas`) restent invisibles, et que la bande de filtres (sélecteur de période seule)
+    est collée au second menu. Thème Clair ↔ Sombre.
 
 
