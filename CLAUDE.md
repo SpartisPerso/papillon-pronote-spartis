@@ -137,6 +137,48 @@ content/pronote/Compétences/Niveaux de maitrise par matière/  Page « Compéte
 
 
 
+content/pronote/Compétences/Livret de compétences numériques/  Page « Compétences →
+                           Livret de compétences numériques » (fil d'Ariane
+                           STRICTEMENT « Livret de compétences numériques ») : la
+                           GRILLE du livret en carte Papillon — 3 colonnes
+                           « Compétences numériques / Évaluations / Niveau » sur une
+                           arborescence `role="treegrid"` (aria-rowcount par PRONOTE)
+                           où chaque ligne est un groupe de TROIS `.liste_celluleGrid`
+                           adjacents (une par colonne, `data-colonne="0|1|2"`), plus le
+                           PIED `[id$="_pied"]` (« Appréciation de l'élève » +
+                           textarea DÉSACTIVÉE, 10rem réservées par
+                           `#…listeConteneur` en `calc(100% - 10rem)`). Aucun titre
+                           n'est affiché : le libellé vit dans un
+                           `span.sr-only[id$="labelListe"]` (en pratique `…_labelListe`,
+                           AVEC underscore ; cibler par le suffixe court pour couvrir les
+                           deux formes) → le JS l'injecte en
+                           `.pap-lcn-title` + compteur (`.pap-lcn-count`, lu sur
+                           `aria-rowcount` car la grille est virtualisée) + pastille de
+                           cycle (`.pap-lcn-cycle`, lue dans le sélecteur masqué
+                           `[aria-label="Sélectionnez un cycle"]` du troisième menu).
+                           Colonnes Évaluations/Niveau vides → repli (même recette que
+                           `evaluationsparcompetence`, jetons `pap-lcn-no-eval` /
+                           `pap-lcn-no-niveau`). ⚠ ⚠ Contrairement à la page voisine,
+                           il n'y a **PAS d'`aria-level`** sur cet arbre (les cellules
+                           ne portent que `role="presentation"`/`role="gridcell"`) :
+                           le niveau domaine/sous-domaine/item est lu par `cellLevel()`
+                           sur la mise en forme INLINE — fond
+                           `--theme-moyen1-scalePlus10` (domaine), `--theme-claire`
+                           (sous-domaine), `--theme-neutre-moyen1` (item) + cylindre
+                           de dépliage (groupes seuls) + `padding-left:12/24px` en
+                           repli. ⚠ Troisième menu : le sélecteur de
+                           cycle est masqué par PRONOTE dans un
+                           `.element-bandeau-wrapper` en `display:none` inline QUE
+                           `header.css` exposerait en `inline-flex !important` : une
+                           règle scopée `:has(.pap-lcn)` le re-masque (ne pas
+                           l'oublier, sinon le cycle réapparaît). ⚠ La textarea du
+                           pied est désactivée (`:disabled`) : la styler, JAMAIS la
+                           réveiller. Classes `pap-lcn-*`. Fichiers en ASCII
+                           (`livretnumerique.js` / `.css`).
+
+
+
+
 options/                   Page d'options (thème Clair / Sombre)
 assets/brand/              Assets officiels Papillon (logotype, favicon, splash)
 assets/icons/papicons/     Icônes Papicons (SVG, MIT) injectées dans PRONOTE
@@ -306,9 +348,9 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   cartes s'empilent).
 - `Compétences/Mon bilan périodique` : ancre **égalité stricte** sur
   `aria-label="Mon bilan périodique"`, classes `pap-bp-*`, **jamais** `pap-bul-*` ni
-  `pap-bc-*` ni `pap-bpc-*`. Les onze ancres (5 Notes + `mes évaluations` + `Difficultés
+  `pap-bc-*` ni `pap-bpc-*`. Les douze ancres (5 Notes + `mes évaluations` + `Difficultés
   et points d'appui` + `Bilan périodique de ma classe` + `Évaluations par compétence` +
-  `Niveaux de maitrise par matière` + celle-ci) restent mutuellement exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
+  `Niveaux de maitrise par matière` + `Livret de compétences numériques` + celle-ci) restent mutuellement exclusives. La page voisine « Bilan périodique de ma classe » (même rubrique, DOM quasi
   identique) ne doit **pas** être attrapée : ne pas élargir l'ancre en regex ni en
   préfixe.
   ⚠ Contrairement aux pages Notes, le `<div role="note">` du message n'est **pas** un enfant
@@ -328,7 +370,7 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   non traité : tous en `display:none` en ligne, ne pas les révéler.
 - `Compétences/Bilan périodique de ma classe` : ancre **égalité stricte** sur
   `aria-label="Bilan périodique de ma classe"`, classes `pap-bpc-*`, **jamais** `pap-bp-*`
-  ni `pap-bc-*`. Les onze ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
+  ni `pap-bc-*`. Les douze ancres restent mutuellement exclusives. Ne **pas** élargir l'ancre
   en regex ni en préfixe « Bilan périodique… », sinon la page voisine « Mon bilan
   périodique » se marque aussi (deux cartes vides superposées).
   ⚠ `pap-bpc-*` (bilan périodique **de ma classe**) et `pap-bc-*` (Notes → « Bulletin de
@@ -343,7 +385,7 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   conséquence tant que le bilan publié n'est pas traité.
 - `Compétences/Évaluations par compétence` : ancre **égalité stricte** sur
   `aria-label="Évaluations par compétence"`, classes `pap-bpd-*`, **jamais** `pap-ev-*` ni
-`pap-dp-*` ni `pap-bp-*` ni `pap-bpc-*`. Les onze ancres Compétences/Notes restent
+`pap-dp-*` ni `pap-bp-*` ni `pap-bpc-*`. Les douze ancres Compétences/Notes restent
    mutuellement exclusives ; ne **pas** élargir l'ancre en regex (elle ressemblerait à
    « Détail de mes évaluations » / « Mes évaluations » de `mesevaluations.js`).
    ⚠ La page voisine « Niveaux de maitrise par matière » (même sous-menu « Bilan par
@@ -370,9 +412,56 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
   note CECRL en `display:none` — ne jamais la révéler) : le replier via
   `.EspaceHaut:empty`. Le troisième menu porte une checkbox
   `label.iecb` (SANS `.as-chips`) « Uniquement les éléments avec évaluations » : pastille
-  via `:has(input:checked)`, sans jamais toucher au display des trois SVGs internes
-  (PRONOTE n'en montre qu'un selon `.on`/`.off`). Le sélecteur de cycle est désactivé
-  (`aria-disabled="true"`) : ne pas le réveiller.
+via `:has(input:checked)`, sans jamais toucher au display des trois SVGs internes
+   (PRONOTE n'en montre qu'un selon `.on`/`.off`). Le sélecteur de cycle est désactivé
+   (`aria-disabled="true"`) : ne pas le réveiller.
+- `Compétences/Livret de compétences numériques` : ancre **égalité stricte** sur
+  `aria-label="Livret de compétences numériques"`, classes `pap-lcn-*`, **jamais**
+  `pap-bpd-*` ni `pap-nm-*`. Les douze ancres Compétences/Notes restent mutuellement
+  exclusives ; ne **pas** élargir l'ancre en préfixe « Livret… ». Même DOM de
+  « Évaluations par compétence » (grille à TROIS `.liste_celluleGrid` adjacents par ligne,
+  `data-colonne` 0/1/2, largeurs inline 1910px/1898px, grille `1595px 217px 86px`,
+  viewport `#…_Zone_1` de 666px) à traiter avec la même recette (`width:auto`,
+  `flex` la chaîne, barre de défilement `--pap-lcn-sb` compensée à l'en-tête). La
+  différence : c'est un **arbre** (`role="treegrid"`), mais ⚠ **PAS d'`aria-level`**
+  sur ce DOM réel (les cellules ne portent que `role="presentation"`/`role="gridcell"`) :
+  `cellLevel()` lit donc le niveau domaine/sous-domaine/item sur la mise en forme
+  INLINE — fond `--theme-moyen1-scalePlus10` (niveau 1 = domaine en gras, pastille
+  teal claire), `--theme-claire` (niveau 2 = sous-domaine, bande neutre), `--theme-neutre-moyen1`
+  (niveau 3+ = item), replié par le cylindre de dépliage (groupes seuls) et
+  `padding-left:12/24px` (l'`aria-level` restant lu en priorité s'il apparaît un jour).
+  L'indentation passe par `data-pap-lcn-niveau` posé sur la **case intérieure**
+  (jamais sur la cellule). ⚠ Le titre
+  vit dans un `span.sr-only[id$="labelListe"]` : injecter depuis ce sr-only. En pratique
+  l'id est `…Instances[0]_labelListe` (AVEC underscore, comme sur la page voisine bpd) :
+  cibler par le **suffixe court** `[id$="labelListe"]` couvre les deux formes, donc ne pas
+  figer la variante observée. ⚠ La page n'a PAS de note CECRL : le
+  bloc final est le **pied** `[id$="_pied"]` (« Appréciation de l'élève », hauteur 10rem
+  réservée par `#…listeConteneur` en `calc(100% - 10rem)` ; c'est `_pied` en fin d'id, PAS
+  `.pied`) — le marquer via `markPied()` →
+  `.pap-lcn-pied`, la textarea DÉSACTIVÉE (`:disabled`) étant stylée mais JAMAIS réveillée.
+   Le pied est le **frère** de `#…listeConteneur` — et non son enfant, mais
+   comme lui un enfant direct de `div.EspaceGauche.EspaceDroit`, seul wrapper
+   du `<main>` : ce wrapper est la **colonne flex** de la page
+   (`main { display:flex }` + `wrapper { flex:1 1 auto }`), sinon la pile
+   `height:100%` / `calc(100% - 10rem)` de PRONOTE déborde de 10rem sous le
+   bord bas. Le pied est donc une **seconde carte arrondie**, centrée comme la
+   grille sur le même `max-width: min(100% - 24px, 1120px)` (bords alignés au
+   pixel) et séparée par une gouttière de 14px — sans elle, les deux cartes se
+   lisaient comme un seul bloc.
+  ⚠ Le troisième menu masque le sélecteur de cycle dans un `.element-bandeau-wrapper` en
+  `display:none` inline QUE `header.css` exposerait en `inline-flex !important` : règle
+  scopée `:has(.pap-lcn)` pour le re-masquer. Une seule checkbox : « Uniquement les items
+  évalués » (nu, ne pas le styler dynamiquement — le filtrage peut vider la grille).
+  ⚠ **La grille est VIRTUALISÉE** : `role="treegrid"` porte `aria-rowcount="184"` pour
+  ~20 lignes réellement dans le DOM. D'où (a) le compteur `.pap-lcn-count` qui lit
+  `aria-rowcount` (compter les cellules rendues donnerait 20) ; (b) les gouttières
+  `.gabarit-refresh` (le second vaut 6520px) et `._range_0` / `._range_1`, placées AVEC et
+  APRÈS les cellules en `grid-column: 1/4` : leur passer `grid-column: 1 / -1` (sinon le
+  repli des colonnes Évaluations/Niveau crée deux colonnes implicites et une barre
+  horizontale) et **jamais** `display:none` (elles donnent la hauteur de défilement) ;
+  (c) la fausse barre de PRONOTE (`.liste_cont_btnscroll` > `._vertical_*` >
+  `.real-scroll`, 8×7319px) est masquée au profit du vrai défilement de `#…_Zone_1`.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -574,5 +663,31 @@ manifest.json              Déclare les content_scripts + web_accessible_resourc
     (`pap-bpd` OU `pap-nm`, jamais deux), `main [role="note"]` qu'un seul `pap-nm-empty`
     (avec une unique icône), et plus aucun `pap-nm-*` après être reparti sur une autre
     page. Vérifier que « Consultation temporaire » reste masquée. Thème Clair ↔ Sombre.
+17. Sur `Compétences → Livret de compétences numériques` : la page doit afficher une seule
+    carte **centrée** (largeur plafonnée à 1120px, marges latérales égales) avec le titre
+    injecté « Livret de compétences numériques », un
+    compteur (« N éléments » selon le nombre d'items) et la pastille du cycle courante
+    (« Compétences numériques » selon le sélecteur), une en-tête de colonnes douce
+    (Compétences numériques / Évaluations / Niveau), des lignes de DOMAINE en gras sur
+    pastille teal claire avec chevron teal, les sous-domaines sur bande neutre et les items
+    en texte naturel indentés. Le défilement doit rester DANS la carte (rien ne déborde sous
+    le bord bas de l'écran, pas de barre horizontale), et le pied « Appréciation de l'élève »
+    doit former une **seconde carte en dessous**, de MÊME largeur que la grille (bords
+    gauche et droit alignés au pixel) et **séparée par une gouttière visible** — s'il est
+    collé à la carte du dessus, la gouttière de 14px n'est pas passée. Sa textarea
+    désactivée est stylée et occupe la place restante. Les
+    colonnes Évaluations / Niveau (vides tant qu'aucune évaluation n'existe) doivent être
+    repliées : la grille n'affiche qu'une colonne de libellés, sans barre horizontale.
+    Survoler une ligne : toute la ligne se teinte ; déplier un domaine : les items enfants
+    s'affichent sans doublon. Changer de cycle dans le troisième menu : la pastille de cycle
+    suit ; cocher « Uniquement les items évalués » filtre la grille.
+    Test de fuite : enchaîner `Niveaux de maitrise par matière` → `Livret de compétences
+    numériques` 2 fois ; en console, `main` ne doit porter qu'UN seul marqueur de page
+    (`pap-nm` OU `pap-lcn`, jamais deux), le `.ObjetListe` qu'un seul `pap-lcn-list` (avec
+    un unique `.pap-lcn-title`, `.pap-lcn-count` et `.pap-lcn-cycle`), et plus aucun
+    `pap-lcn-*` après être reparti sur une autre page. Vérifier que le sélecteur de cycle ne
+    réapparaît pas (re-masqué par la règle `:has(.pap-lcn)`), que les deux boutons du second
+    menu sont en pastilles fantômes (désactivés), que « Consultation temporaire » reste
+    masquée, et que la bande de filtres est collée au second menu. Thème Clair ↔ Sombre.
 
 

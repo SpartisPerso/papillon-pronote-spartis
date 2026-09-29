@@ -1,0 +1,1308 @@
+/* ============================================================
+   PAGE COMPÉTENCES — « LIVRET DE COMPÉTENCES NUMÉRIQUES » façon Papillon
+   Cible : page « Compétences → Livret de compétences numériques »
+   PRONOTE, repérée par son fil d'Ariane
+   h1#breadcrumbBandeau[aria-label="Livret de compétences numériques"]
+   (la classe .pap-lcn est posée par livretnumerique.js sur le <main>).
+
+   Restyle purement visuel : la grille Compétences numériques /
+   Évaluations / Niveau devient une carte Papillon (PRONOTE n'affiche
+   aucun titre, c'est livretnumerique.js qui l'injecte avec un
+   compteur et une pastille de cycle), et le pied « Appréciation de
+   l'élève » devient le bas de cette carte. Recherche, tout
+   réduire/déplier, dépliage des domaines et sous-domaines, filtrage
+   « Uniquement les items évalués », sélection et boutons du second
+   menu restent natifs.
+
+   ⚠ Feuille STRICTEMENT scopée : les sélecteurs génériques de liste
+   (.liste_zone, .liste-heriar, .liste_content…) ne sont touchés QUE
+   sous .pap-lcn-list, jamais ailleurs (le <main> de PRONOTE est
+   réutilisé d'une page à l'autre, et les autres pages utilisent les
+   mêmes classes natives). Aucune règle pap-bpd-* / pap-nm-* /
+   pap-ev-* ni pap-vh-* n'est reprise ici : la page voisine
+   « Niveaux de maitrise par matière » garde ses propres jetons
+   (.pap-nm). Ne jamais révéler les blocs que PRONOTE masque à
+   l'ouverture (sélecteur de cycle du troisième menu, bannière
+   « Consultation temporaire »).
+
+   ⚠ Troisième menu : le sélecteur de CYCLE est masqué par PRONOTE
+   dans un .element-bandeau-wrapper en display:none INLINE, alors que
+   la règle globale de header.css (header.css:263) expose TOUT
+   .element-bandeau-wrapper en inline-flex !important. Sans la règle
+   scopée « :has(.pap-lcn) » plus bas, le cycle réapparaîtrait.
+   ============================================================ */
+
+/* ============================================================
+   1. Fond de page
+   Le wrapper extérieur (.interface_affV) porte un
+   background-color:var(--color-background) inline qui resterait
+   clair en sombre → forcer le fond Papillon, scopé via :has()
+   (le wrapper est un ancêtre de .pap-lcn, pas un descendant).
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-lcn) {
+  background-color: #ffffff !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-lcn {
+  background-color: transparent !important;
+}
+
+/* Hauteur : la PILE est pilotée par .EspaceGauche.EspaceDroit, qui
+   contient les DEUX cartes (enfants directs) :
+     div.EspaceGauche.EspaceDroit      [style height:100%]
+       ├ div#…_listeConteneur            [style calc(100% - 10rem)]
+       │   └ div#…Instances[0]           [style height:100%]
+       │       └ .ObjetListe → .pap-lcn-list
+       └ div#…_pied                      [style height:10rem]
+   ⚠ PRONOTE fait déjà déborder : .EspaceGauche vaut height:100%
+   ET #…_listeConteneur vaut calc(100% - 10rem), si bien que les 10rem
+   du pied s'ajoutaient SOUS le conteneur. On en fait une colonne FLEX :
+   chaque maillon garde min-height:0, la carte occupe ce qui reste et le
+   pied se cale en bas. Plus de débordement sous le bord bas de l'écran,
+   et les DEUX cartes se calent sur la même boîte de référence (centrage
+   aligné, gouttière entre elles). */
+body.papillon-pronote main.interface_affV_client.pap-lcn {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Le <main> ne contient que ce wrapper : sans flex:1 1 auto, la colonne
+   s'arrêterait à sa hauteur native au lieu de remplir l'écran. */
+body.papillon-pronote main.interface_affV_client.pap-lcn > .EspaceGauche.EspaceDroit {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-lcn > .EspaceGauche.EspaceDroit > div[id$="listeConteneur"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+body.papillon-pronote main.interface_affV_client.pap-lcn > .EspaceGauche.EspaceDroit > div[id$="listeConteneur"] > div {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ============================================================
+   2. La carte (.pap-lcn-list, posée par le JS sur le .ObjetListe)
+   CONTRAINTE de largeur (pas de largeur figée) : la carte est
+   CENTRÉE sur l'écran par max-width + marges auto, comme la page
+   voisine « Évaluations par compétence ». En flex colonne, c'est
+   flex:1 1 auto qui lui donne la hauteur : #…_Zone_1 (flex:1 1 auto
+   plus bas) reçoit alors une vraie taille → défilement à la molette
+   DANS la carte, sans débordement sous le bord bas de l'écran.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  /* Centrée, et DÉCOLLÉE de la barre de filtres du dessus (12px) :
+     à 0 la carte touchait le troisième menu. En flex colonne, le
+     margin-top est pris sur la place restante (flex:1 1 auto), donc
+     aucun débordement. */
+  margin: 12px auto 0 !important;
+  width: auto !important;
+  max-width: min(100% - 24px, 1120px) !important;
+  padding: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #e7efee !important;
+  border-radius: 25px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .06) !important;
+  overflow: hidden !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  color: #10130f !important;
+}
+
+/* ============================================================
+   3. Neutralisation des surfaces blanches natives
+   PRONOTE peint en blanc et cadre chaque couche interne de sa liste
+   (bordures 1px var(--theme-neutre-moyen2) en inline sur
+   .liste_content, bord-right sur chaque cellule, b-right/b-left sur
+   .liste-titre-zone) : on les rend transparentes pour que la carte
+   Papillon « flotte » sans doublon de fond.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list .liste_zone,
+body.papillon-pronote .pap-lcn-list .liste_zoneFils,
+body.papillon-pronote .pap-lcn-list .liste-heriar,
+body.papillon-pronote .pap-lcn-list .liste_content,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_deploiement,
+body.papillon-pronote .pap-lcn-list .liste_contenu_ligne,
+body.papillon-pronote .pap-lcn-list .liste_conteneurCadreSelection,
+body.papillon-pronote .pap-lcn-list .liste_cont_btnscroll,
+body.papillon-pronote .pap-lcn-list .liste_titre_cellule {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list,
+body.papillon-pronote .pap-lcn-list .liste_zone,
+body.papillon-pronote .pap-lcn-list .liste_content {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Largeurs figées en inline ----------
+   PRONOTE fige 1858px / 1848px / 1513px / 200px / 70px sur toute la
+   chaîne (barre de titre, zone, grilles, cellules, contenus) : on rend
+   tout fluide, sinon la carte déborde horizontalement. Le
+   div#…_Contenu_1 (1848px) ne porte AUCUNE classe : il est rattrapé
+   par la règle large ci-dessous, comme sur la page voisine. */
+body.papillon-pronote .pap-lcn-list .liste_btnentete,
+body.papillon-pronote .pap-lcn-list .liste_btnentete_droite,
+body.papillon-pronote .pap-lcn-list .liste_contbtnRechercheEntete,
+body.papillon-pronote .pap-lcn-list .liste_zone,
+body.papillon-pronote .pap-lcn-list .liste_zoneFils,
+body.papillon-pronote .pap-lcn-list .liste-heriar,
+body.papillon-pronote .pap-lcn-list .liste-heriar > div,
+body.papillon-pronote .pap-lcn-list .liste_content,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes,
+body.papillon-pronote .pap-lcn-list .liste_content > div,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_contenu,
+body.papillon-pronote .pap-lcn-list .liste_contenu_ligne,
+body.papillon-pronote .pap-lcn-list .liste_titre_cellule {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ⚠ PRONOTE fige aussi 1848px en inline sur le div SANS CLASSE qui
+   enveloppe la grille de données (#…_Contenu_1, descendant de la vue
+   #…_Zone_1). Rattrapage large : TOUT div descendant portant une
+   largeur fixe en inline passe à auto — c'est voulu, ces surfaces
+   sont déjà rendues fluides par la suite. */
+body.papillon-pronote .pap-lcn-list div[style*="width"] {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ============================================================
+   4. Chaîne de flexibles jusqu'au viewport
+   La hauteur de la carte se propage au viewport (#…_Zone_1) : chaque
+   maillon est un flexible qui peut rétrécir. Il y a DEUX maillons sans
+   classe entre .liste-heriar et .liste_content (le #…_titreTout0 de la
+   barre de colonnes ET le div#…_contenuListe_0) — d'où les deux
+   sélecteurs : le maillon de liste par :has(.liste_content) et le
+   maillon isolé par `div:has(> .liste_content)`. En oublier un
+   revient à laisser le viewport à 0 de haut.
+   ⚠ #…_titreTout0 (la barre des colonnes) est aussi un maillon direct
+   de l'OUTER .liste-heriar, mais il porte .liste-titre-zone et non
+   .liste_content : :has(.liste_content) ne le matche pas.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list .liste_zone,
+body.papillon-pronote .pap-lcn-list .liste_zoneFils,
+body.papillon-pronote .pap-lcn-list .liste-heriar,
+body.papillon-pronote .pap-lcn-list div:has(> .liste_content),
+body.papillon-pronote .pap-lcn-list .liste_content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+}
+
+/* La barre des colonnes (titre) ne doit pas rétrécir devant les
+   lignes : flex-shrink 0, hauteur naturelle. */
+body.papillon-pronote .pap-lcn-list .liste-titre-zone,
+body.papillon-pronote .pap-lcn-list .liste-heriar > div:has(.liste-titre-zone) {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 8px !important;
+}
+
+/* ---------- Viewport de liste borné ----------
+   #…_Zone_1 porte un height inline (150px ici : c'est la hauteur
+   NATIVE figée par PRONOTE) et un box-sizing:content-box : on en fait
+   le SEUL conteneur de défilement.
+   ⚠ Sélecteur borné à #…_Zone_1 : #…_Contenu_1 (la grille) est un
+   div[style] descendant, il ne doit PAS se retrouver en overflow:auto,
+   sinon double barre de défilement horizontale. */
+body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"] {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #cfd9d5 transparent !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"]::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"]::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"]::-webkit-scrollbar-thumb {
+  background: #cfd9d5 !important;
+  border-radius: 4px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+/* Barre de défilement native de PRONOTE (._vertical_* > .real-scroll,
+   8px de large, 7319px de haut) : on la neutralise sans la retirer du
+   DOM (son JS s'en sert pour mesurer les tailles) — c'est #…_Zone_1
+   qui assure désormais le défilement réel. */
+body.papillon-pronote .pap-lcn-list .liste_cont_btnscroll {
+  display: none !important;
+}
+
+/* Le cadre de sélection natif (3 .liste_ligneSelection absolutely
+   positionnées sur les largeurs inline d'origine : top/left/width en
+   px) serait faux une fois les colonnes élargies : on le retire, la
+   sélection est rendue par le CSS des cellules (.selected). Idem pour
+   les ombres de survol natives (4 .liste_conteneur_rollover). */
+body.papillon-pronote .pap-lcn-list .liste_conteneurCadreSelection,
+body.papillon-pronote .pap-lcn-list .liste_ligneSelection,
+body.papillon-pronote .pap-lcn-list .liste_conteneur_rollover {
+  display: none !important;
+}
+
+/* ============================================================
+   5. Barre de titre de la carte
+   PRONOTE n'affiche AUCUN titre : livretnumerique.js injecte
+   .pap-lcn-title (copie visible du <span class="sr-only"
+   id="…labelListe">, qui reste en place), un compteur   (.pap-lcn-count) et le cycle en cours (.pap-lcn-cycle, lu dans le
+   sélecteur masqué du troisième menu). Les boutons « tout
+   réduire / tout déployer » et « Rechercher » passent en pastilles.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list .liste_btnentete {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+  padding: 2px 2px 12px !important;
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-title {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+  color: #10130f !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  background: #eaf7f4 !important;
+  color: #157a63 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cycle {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: #8a9b95 !important;
+  pointer-events: none !important;
+}
+
+/* Boutons « tout réduire / tout déployer » et « Rechercher » →
+   pastilles façon Papillon. Le bouton de dépliage est poussé à droite. */
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  border-radius: 300px !important;
+  background: var(--papillon-hover, #f2f6f5) !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete {
+  margin-left: auto !important;
+  margin-right: 2px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage:hover,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete:hover {
+  background: #ddf2ec !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage:active,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete:active {
+  transform: scale(.94) !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage svg,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage svg path,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete svg,
+body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete svg path {
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important;
+}
+
+/* ============================================================
+   6. En-tête de colonnes (Compétences numériques / Évaluations / Niveau)
+   PRONOTE fige la grille en inline (grid-template-columns:1545px
+   217px 86px, grid-column:1|2|3) : on remplace par trois fractions
+   fluides. On remet aussi grid-column:auto sur les cellules ET sur
+   les gouttières virtuelles, sans quoi l'étalement natif
+   (1/3, 3/5, 5/7, calé sur les largeurs d'origine) désalignerait les
+   trois colonnes.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list .liste_gridTitre,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 190px 118px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  column-gap: 8px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_gridTitre_cel,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes > .liste_celluleGrid {
+  grid-column: auto !important;
+  min-width: 0 !important;
+}
+
+/* ⚠ Gouttières virtuelles : sur cette page la grille est VIRTUALISÉE
+   (aria-rowcount=184 pour ~20 lignes rendues). Les espaces sont des
+   .gabarit-refresh (le second vaut 6520px) et des ._range_* placés
+   AVEC et APRÈS les cellules, en `grid-column: 1/4`. Ils doivent
+   garder toute la largeur de la grille — sinon, quand les colonnes
+   Évaluations / Niveau sont repliées (grille à 1 colonne), le
+   `1/4` créerait deux colonnes implicites et la carte afficherait une
+   barre de défilement horizontale. D'où 1/-1, qui vaut 1/4 dans les
+   deux cas. Ne surtout PAS les passer en display:none : ce sont ces
+   gouttières qui donnent la hauteur de défilement. */
+body.papillon-pronote .pap-lcn-list .liste_content_lignes > .gabarit-refresh,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes > ._range_0,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes > ._range_1,
+body.papillon-pronote .pap-lcn-list .liste_content_lignes > [style*="grid-column"]:not(.liste_celluleGrid) {
+  grid-column: 1 / -1 !important;
+  min-width: 0 !important;
+}
+
+/* Barre d'en-tête : bandeau doux arrondi, libellés en capitales.
+   ⚠ Pour que les colonnes soient ALIGNÉES avec celles des lignes,
+   ce conteneur doit partager EXACTEMENT la même grille que
+   .liste_content_lignes (même template, column-gap:0, padding:0) : un
+   padding / un gap différent décalerait le bord gauche de chaque
+   colonne d'en-tête par rapport aux cases des lignes. Le souffle
+   visuel est donné par le padding interne des cellules
+   (.liste_gridTitre_cel), pas par le conteneur. */
+body.papillon-pronote .pap-lcn-list .liste_gridTitre {
+  padding: 2px !important;
+  column-gap: 0 !important;
+  border-radius: 14px !important;
+  background: #f2f6f5 !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_gridTitre .liste_gridTitre_cel {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 28px !important;
+  padding: 4px 14px !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* « Évaluations » et « Niveau » sont centrés comme le contenu des
+   cases des deux dernières colonnes. */
+body.papillon-pronote .pap-lcn-list .liste_gridTitre_cel:not(:first-child) {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Le libellé de colonne vit dans un .ie_ellipsis (contenu tronqué,
+   role=presentation) pour les deux premières colonnes, et dans un
+   div[overflow:hidden] nu pour la troisième. */
+body.papillon-pronote .pap-lcn-list .liste_gridTitre .ie_ellipsis,
+body.papillon-pronote .pap-lcn-list .liste_gridTitre .ie_ellipsis span,
+body.papillon-pronote .pap-lcn-list .liste_gridTitre_cel > div[style*="overflow"] {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  color: #5d6b66 !important;
+}
+
+/* PRONOTE pose des bordures natives (b-right / b-left) sur la zone
+   d'en-tête : on les retire. */
+body.papillon-pronote .pap-lcn-list .liste-titre-zone {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste-titre-contenu {
+  width: auto !important;
+  max-width: 100% !important;
+}
+
+/* ⚠ Alignement avec les lignes : le viewport (frère, plus bas) réserve
+   la largeur de sa barre de défilement ; l'en-tête, elle, ne réserve
+   rien et ses colonnes partent ~10px plus à droite. --pap-lcn-sb est
+   mesuré par livretnumerique.js (voir measureScrollbar) : on facture
+   la même largeur en padding-right à .liste-titre-contenu, donc les
+   trois pistes de l'en-tête se calent PILE sous celles des lignes,
+   quelle que soit la barre (8px Chrome/Win, 10px GNOME, 0 si
+   scrollbar overlay). */
+body.papillon-pronote .pap-lcn-list .liste-titre-contenu {
+  padding-right: var(--pap-lcn-sb, 0) !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_gridTitre_cel[style*="grid-column"] {
+  grid-column: auto !important;
+}
+
+/* ============================================================
+   7. Cellules de la grille (lignes)
+   ⚠ Ici chaque « ligne » de données est un groupe de TROIS
+   .liste_celluleGrid adjacents (Compétences numériques / Évaluations /
+   Niveau), pas un conteneur : les cellules d'une même ligne sont donc
+   des FRÈRES consécutifs. C'est ce qui permet, pour le survol et la
+   sélection de ligne, d'enchaîner les sélecteurs `+ .pap-lcn-cell`
+   (toute ligne rendue a toujours ses trois cellules, même vides).
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list .liste_content_lignes {
+  grid-auto-rows: minmax(46px, auto) !important;
+  row-gap: 6px !important;
+  column-gap: 0 !important;
+  padding: 2px !important;
+  box-sizing: border-box !important;
+}
+
+/* La cellule (colonne) : le socle ne peint rien, c'est
+   .liste_contenu_cellule qui porte la « case » de la ligne. */
+body.papillon-pronote .pap-lcn-list .liste_celluleGrid {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+/* La « case » de chaque cellule : toutes les cellules d'une même
+   ligne se PARTAGENT une seule case (column-gap 0), donc la bordure
+   est continue de la première à la dernière colonne. Les coins
+   arrondis vont au premier et au dernier maillon. */
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e3ebea !important;
+  background: #ffffff !important;
+  transition: background-color .15s ease, border-color .15s ease !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"] > .liste_contenu_cellule {
+  border-radius: 14px 0 0 14px !important;
+  padding-left: 12px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="1"] > .liste_contenu_cellule {
+  border-radius: 0 !important;
+  border-left: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="2"] > .liste_contenu_cellule {
+  border-radius: 0 14px 14px 0 !important;
+  border-left: none !important;
+}
+
+/* ---------- Hiérarchie de l'arbre ----------
+   ⚠ Le niveau n'est PAS porté par un aria-level sur ce DOM : c'est
+   livretnumerique.js qui le déduit et le écrit dans
+   data-pap-lcn-niveau sur la CASE INTÉRIEURE. Ces trois règles
+   remplacent le padding-left inline de PRONOTE (12px sous-domaine /
+   24px item) par l'échelle Papillon. */
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule[data-pap-lcn-niveau="1"] {
+  padding-left: 12px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule[data-pap-lcn-niveau="2"] {
+  padding-left: 26px !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule[data-pap-lcn-niveau="3"] {
+  padding-left: 40px !important;
+}
+
+/* Cylindre de dépliage (domaines et sous-domaines) : chevron teal,
+   jamais redimensionné par notre règle (PRONOTE le pivote pour
+   agrandir/réduire). */
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_deploiement {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: 18px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_deploiement svg,
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_deploiement svg path {
+  width: 15px !important;
+  height: 15px !important;
+  fill: currentColor !important;
+}
+
+/* Texte des items : on laisse ZWJ relégué au DOM PRONOTE ; l'item
+   « [Niveau 1] Lire et repérer des informations… » garde son texte
+   exact. Alignement vertical, retour à la ligne naturel, importances
+   natives (.Gras) annulées. */
+body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_contenu {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .liste_contenu_ligne {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  line-height: 1.5 !important;
+  font-weight: 500 !important;
+  font-style: normal !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  color: #10130f !important;
+}
+
+/* ---------- Lignes de domaine (niveau 1) ----------
+   Le domaine (« Information et données ») est la ligne dépliable la
+   plus haute : elle reçoit une pastille teal claire pleine largeur.
+   Le JS marque les TROIS cellules du groupe .pap-lcn-domaine, donc la
+   bande est continue d'une colonne à l'autre et la bordure suit. */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-domaine > .liste_contenu_cellule {
+  min-height: 46px !important;
+  background: #e8f5f1 !important;
+  border-color: #cfe9e1 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-domaine .liste_contenu_ligne {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #1d6f5e !important;
+  letter-spacing: -.01em !important;
+}
+
+/* ---------- Lignes de sous-domaine (niveau 2) ----------
+   Bande neutre (le fond natif --theme-claire), pour les distinguer des items. */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine > .liste_contenu_cellule {
+  min-height: 44px !important;
+  background: #f7fafa !important;
+  border-color: #e7efee !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine .liste_contenu_ligne {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #2b3a35 !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine .liste_contenu_cellule_deploiement {
+  color: #4f6b63 !important;
+}
+
+/* ---------- Lignes d'item (niveau 3 et au-delà) ----------
+   Texte naturel sur case blanche ; l'indentation est portée par le
+   padding-left de data-pap-lcn-niveau (règles plus haut). */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-item > .liste_contenu_cellule {
+  background: #ffffff !important;
+}
+
+/* ---------- Colonnes Évaluations / Niveau ----------
+   Texte doux centré ; ces cellules n'ont jamais d'arrière-plan (la
+   ligne est la colonne Compétences numériques). */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="1"] > .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="2"] > .liste_contenu_cellule {
+  justify-content: center !important;
+  padding: 8px 6px !important;
+  background: transparent !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="1"] .liste_contenu_ligne,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="2"] .liste_contenu_ligne {
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  color: #5d6b66 !important;
+}
+
+/* Évaluations / Niveau vides : tiret doux à la place du &nbsp; */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell-vide .liste_contenu_ligne {
+  display: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell-vide > .liste_contenu_cellule::after {
+  content: '—' !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  color: #c2cec9 !important;
+}
+
+/* ---------- Colonnes entièrement vides : repli ----------
+   Tant qu'aucune évaluation n'existe, les colonnes « Évaluations » et
+   « Niveau » ne servent à rien et n'afficheraient qu'une rangée de
+   cases vides à droite. livretnumerique.js pose alors
+   .pap-lcn-no-eval / .pap-lcn-no-niveau sur la carte : on retire ces
+   colonnes du layout (display:none sur l'en-tête ET les cellules) et
+   on resserre la grille à 2 puis 1 colonnes. L'ordre natif
+   Compétences numériques / Évaluations / Niveau (data-colonne 0/1/2)
+   est conservé. */
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval:not(.pap-lcn-no-niveau) .liste_gridTitre,
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval:not(.pap-lcn-no-niveau) .liste_content_lignes {
+  grid-template-columns: minmax(0, 1fr) 118px !important;
+}
+
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval .liste_gridTitre_cel:nth-child(2),
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval .liste_celluleGrid[data-colonne="1"] {
+  display: none !important;
+}
+
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-niveau:not(.pap-lcn-no-eval) .liste_gridTitre,
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-niveau:not(.pap-lcn-no-eval) .liste_content_lignes {
+  grid-template-columns: minmax(0, 1fr) 190px !important;
+}
+
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-niveau .liste_gridTitre_cel:nth-child(3),
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-niveau .liste_celluleGrid[data-colonne="2"] {
+  display: none !important;
+}
+
+/* Les DEUX colonnes vides : une seule colonne « Compétences
+   numériques » pleine largeur ; la case unique reprend alors ses 4
+   coins arrondis et sa bordure fermée (sans quoi le rayon
+   14px 0 0 14px de la colonne 0 et le 0 14px 14px 0 de la colonne 2
+   laisseraient des coins carrés). */
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval.pap-lcn-no-niveau .liste_gridTitre,
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval.pap-lcn-no-niveau .liste_content_lignes {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval.pap-lcn-no-niveau
+  .pap-lcn-cell[data-colonne="0"] > .liste_contenu_cellule {
+  border-radius: 14px !important;
+  border-right: 1px solid #e3ebea !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list.pap-lcn-no-eval.pap-lcn-no-niveau
+  .pap-lcn-cell[data-colonne="0"] > .liste_contenu_cellule {
+  border-right-color: #2a3531 !important;
+}
+
+/* ---------- Sélection ----------
+   PRONOTE pose la classe .selected sur les TROIS cellules de la ligne
+   active (et aria-selected="true" sur les cases internes) : chaque
+   cellule se teinte, et la cellule « Compétences numériques » entraîne
+   ses deux suivantes (+ .pap-lcn-cell) pour colorer toute la ligne. */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected > .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected + .pap-lcn-cell > .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected + .pap-lcn-cell + .pap-lcn-cell > .liste_contenu_cellule {
+  background: rgba(53, 187, 160, .14) !important;
+  border-color: #a5dccf !important;
+}
+
+/* ---------- Survol ----------
+   Le survol d'une cellule « Compétences numériques » allume toute la
+   ligne (les deux cellules suivantes), comme un seul grand bouton. */
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"] > .liste_contenu_cellule:hover,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"]:hover + .pap-lcn-cell > .liste_contenu_cellule,
+body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"]:hover + .pap-lcn-cell + .pap-lcn-cell > .liste_contenu_cellule {
+  background: var(--papillon-hover, #f2f6f5) !important;
+  border-color: #cfe9e1 !important;
+  cursor: pointer !important;
+}
+
+/* ============================================================
+   8. Pied de carte (.pap-lcn-pied)
+   Le bloc [id$="_pied"] (« Appréciation de l'élève » + textarea
+   DÉSACTIVÉE) est le FRÈRE de #…listeConteneur dans la colonne flex
+   .EspaceGauche.EspaceDroit — donc ce n'est PAS une suite de la carte
+   de la grille, mais deux cartes sisters, séparées par une gouttière de
+   14px (sans elle, le pied se collait à la carte du dessus et les deux
+   se lisaient comme un seul bloc). Les deux portent le MÊME max-width,
+   donc leurs bords gauche et droit tombent pile.
+   On habille le contenu, sans jamais réveiller la textarea
+   (:disabled reste :disabled — c'est PRONOTE qui la bloque).
+   ============================================================ */
+body.papillon-pronote .pap-lcn-pied {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  min-height: 0 !important;
+  /* MÊME gabarit que la carte (1120px), 14px de gouttière entre les
+     deux cartes, 12px de respiration en bas d'écran. */
+  max-width: min(100% - 24px, 1120px) !important;
+  margin: 14px auto 12px !important;
+  padding: 12px 14px 14px !important;
+  background: #ffffff !important;
+  border: 1px solid #e7efee !important;
+  border-radius: 22px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+  overflow: hidden !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  color: #10130f !important;
+}
+
+body.papillon-pronote .pap-lcn-pied > label,
+body.papillon-pronote .pap-lcn-pied > .Gras {
+  display: block !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+  margin: 0 0 6px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #2b3a35 !important;
+}
+
+/* ⚠ La chaîne doit être FLEX de bout en bout : le wrapper est en
+   height:auto (flex item du pied), donc un height:100% sur
+   .textarea-style se résout contre une boîte auto et retombe à
+   « auto » — la textarea s'effondrait à sa hauteur intrinsèque
+   (une poignée de pixels). D'où les trois niveaux en flex:1 1 auto,
+   qui font enfin remplir la place restante du pied. */
+body.papillon-pronote .pap-lcn-pied .textareamax-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+body.papillon-pronote .pap-lcn-pied .textarea-style {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+body.papillon-pronote .pap-lcn-pied textarea.textareamax {
+  display: block !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 3.5rem !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e3ebea !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: #10130f !important;
+  resize: none !important;
+  cursor: default !important;
+}
+
+/* ⚠ La textarea est DÉSACTIVÉE par PRONOTE (disabled="disabled") :
+   on ne réveille JAMAIS l'édition, on ne fait qu'estomper le champ
+   pour qu'il se lise comme un champ non éditable. */
+body.papillon-pronote .pap-lcn-pied textarea.textareamax:disabled {
+  background: #f2f6f5 !important;
+  border-style: dashed !important;
+  color: #8a9b95 !important;
+  -webkit-text-fill-color: #8a9b95 !important;
+}
+
+body.papillon-pronote .pap-lcn-pied .tam_counter {
+  display: none !important;
+}
+
+/* Le micro de dictée vocale (.tam_speech) est un bouton de saisie : le
+   champ étant DÉSACTIVÉ par PRONOTE, il n'a rien à écrire. On le retire
+   de la présentation (sans toucher au disabled du textarea). */
+body.papillon-pronote .pap-lcn-pied .tam_speech {
+  display: none !important;
+}
+
+/* ⚠ Appréciation VIDE (aucune publiée) : le champ est masqué et la carte
+   se resserre sur son seul titre, au lieu de laisser 10rem de zone
+   pointillée vide. La classe est posée par markPied() — en CSS seul on
+   ne peut pas tester « une textarea est vide » (ni :empty ni
+   :placeholder-shown ne s'appliquent à un champ de formulaire). */
+body.papillon-pronote .pap-lcn-pied.pap-lcn-pied-vide {
+  height: auto !important;
+  padding-bottom: 12px !important;
+}
+
+body.papillon-pronote .pap-lcn-pied.pap-lcn-pied-vide > .Gras,
+body.papillon-pronote .pap-lcn-pied.pap-lcn-pied-vide > label {
+  margin-bottom: 0 !important;
+}
+
+body.papillon-pronote .pap-lcn-pied.pap-lcn-pied-vide .textareamax-wrapper {
+  display: none !important;
+}
+
+/* ============================================================
+   9. État vide (cycle sans aucun item)
+   PRONOTE écrit le message en texte nu dans .liste_messageVide ; on
+   l'encadre en carte pointillée (EmptyItem Papillon). La carte de
+   liste, redondante, s'efface alors.
+   ============================================================ */
+body.papillon-pronote .pap-lcn-list:has(.pap-lcn-empty) {
+  height: auto !important;
+  max-height: none !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+body.papillon-pronote .pap-lcn-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  flex: 1 1 auto !important;
+  min-height: 240px !important;
+  margin: 0 auto 14px !important;
+  padding: 30px 20px !important;
+  max-width: min(100% - 24px, 1120px) !important;
+  border: 1.5px dashed #e7efee !important;
+  border-radius: 25px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05) !important;
+}
+
+body.papillon-pronote .pap-lcn-empty-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  color: #c8d6d1 !important;
+  opacity: 1 !important;
+}
+
+body.papillon-pronote .pap-lcn-empty-icon svg {
+  width: 48px !important;
+  height: 48px !important;
+  fill: currentColor !important;
+}
+
+body.papillon-pronote .pap-lcn-empty > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: #10130f !important;
+}
+
+/* ============================================================
+   10. Bande de filtres (troisième menu)
+   ⚠ Deux points spécifiques à CETTE page :
+
+   (a) Le sélecteur de CYCLE est masqué par PRONOTE dans un
+   .element-bandeau-wrapper en `display: none` INLINE, alors que la
+   règle globale de header.css expose TOUT .element-bandeau-wrapper en
+   `inline-flex !important`. Sans cette règle scopée, le cycle
+   réapparaîtrait dans la bande — on ne le réveille donc pas, on le
+   re-masque pas. Cible le style inline (jamais l'id : il change d'une
+   page à l'autre) et, en secours, le wrapper qui CONTIENT le combo.
+   Le <li class="element-bandeau-wrapper"> de la checkbox n'a pas de
+   style inline : il n'est jamais matché.
+
+   (b) La checkbox « Uniquement les items évalués » est un
+   <label class="iecb"> SANS la classe .as-chips que stylise
+   header.css → PRONOTE afficherait la case native. On la pose en
+   pastille comme sur « Évaluations par compétence », SANS toucher au
+   display des trois SVGs internes (PRONOTE n'en montre qu'un selon les
+   classes .on / .off). Pas de pastille dynamique ici : cocher la case
+   peut vider la grille, on ne veut pas d'un état figé.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau
+  .element-bandeau-wrapper[style*="display: none"],
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau
+  .element-bandeau-wrapper:has([aria-label="Sélectionnez un cycle"]) {
+  display: none !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid #e7efee !important;
+  background: #f2f6f5 !important;
+  color: #10130f !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease, border .15s ease !important;
+}
+
+/* Cocha « Uniquement les items évalués » : pastille teal quand la case
+   est cochée (détection via :has(input:checked), robuste au
+   re-rendu — PRONOTE ne pose pas de classe sur ce label). */
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb:has(input:checked) {
+  background: #ddf2ec !important;
+  border-color: #81c9b6 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb .icone-svg,
+body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ============================================================
+   11. Boutons du second menu (Enregistrer / Générer le PDF)
+   Ce sont des <i class="btnImage"> : ni <a>, ni <button>, ni
+   [role=button], donc la règle globale de header.css ne les touche
+   pas et ils resteraient invisibles. Les deux sont DÉSACTIVÉS
+   (btnImageDisable + aria-disabled="true") tant qu'aucun item n'est
+   sélectionné.
+   ⚠ Ne surtout PAS styler les <li> du menu : le troisième porte la
+   bannière « Consultation temporaire » que PRONOTE masque avec
+   style="display:none", et un display:flex !important la ferait
+   réapparaître.
+   ============================================================ */
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImage,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .icone-svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 0 !important;
+  border-radius: 300px !important;
+  background: #f1f1f1 !important;
+  border: 1px solid #e7efee !important;
+  box-shadow: none !important;
+  color: #10130f !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .icone-svg:hover {
+  background: #ddf2ec !important;
+  border-color: #81c9b6 !important;
+  color: #157a63 !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImage:active {
+  transform: scale(.94) !important;
+}
+
+/* Désactivé : estompé mais visible. */
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImageDisable,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes [aria-disabled="true"].btnImage {
+  opacity: .55 !important;
+  cursor: default !important;
+}
+
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes svg,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .icone-svg,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes svg path,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes svg use,
+body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes svg g {
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* ============================================================
+   12. Mode sombre
+   ============================================================ */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) {
+  background-color: #101513 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_contenu_ligne {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-title {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-count {
+  background: #14352c !important;
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cycle {
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_gridTitre {
+  background: #1f2a26 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_gridTitre .ie_ellipsis,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_gridTitre .ie_ellipsis span,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_gridTitre_cel > div[style*="overflow"] {
+  color: #93a79f !important;
+}
+
+/* Case des lignes en sombre : fond et bordure profonds */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_contenu_cellule {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="1"] > .liste_contenu_cellule,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="2"] > .liste_contenu_cellule {
+  background: transparent !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-item > .liste_contenu_cellule {
+  background: #1a211e !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete {
+  background: #1a211e !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_btnentete .btnImage:hover,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_btnentete .btn-deploiement-entete:hover {
+  background: #14352c !important;
+  color: #35bba0 !important;
+}
+
+/* Domaine : fond teal lourd, texte clair */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-domaine > .liste_contenu_cellule {
+  background: #14352c !important;
+  border-color: #1f5648 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-domaine .liste_contenu_ligne {
+  color: #6fd7c1 !important;
+}
+
+/* Sous-domaine : bande neutre sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine > .liste_contenu_cellule {
+  background: #1f2a26 !important;
+  border-color: #2a3531 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine .liste_contenu_ligne {
+  color: #cfd9d5 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.pap-lcn-sousdomaine .liste_contenu_cellule_deploiement {
+  color: #93a79f !important;
+}
+
+/* Sélection : teinte teal transparente sur fond sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected > .liste_contenu_cellule,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected + .pap-lcn-cell > .liste_contenu_cellule,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell.selected + .pap-lcn-cell + .pap-lcn-cell > .liste_contenu_cellule {
+  background: rgba(53, 187, 160, .18) !important;
+  border-color: #2f7a69 !important;
+}
+
+/* Survol : haptic doux sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"] > .liste_contenu_cellule:hover,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"]:hover + .pap-lcn-cell > .liste_contenu_cellule,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="0"]:hover + .pap-lcn-cell + .pap-lcn-cell > .liste_contenu_cellule {
+  background: #202926 !important;
+  border-color: #2f7a69 !important;
+}
+
+/* Évaluations / Niveau : texte doux sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="1"] .liste_contenu_ligne,
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell[data-colonne="2"] .liste_contenu_ligne {
+  color: #93a79f !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .pap-lcn-cell-vide > .liste_contenu_cellule::after {
+  color: #4a5b55 !important;
+}
+
+/* Cylindre de dépliage / barre de défilement en sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_contenu_cellule_deploiement {
+  color: #6fd7c1 !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"] {
+  scrollbar-color: #2f3d38 transparent !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-list .liste_content > div[id*="_Zone_1"]::-webkit-scrollbar-thumb {
+  background: #2f3d38 !important;
+  background-clip: padding-box !important;
+}
+
+/* Pied de carte en sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-pied {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-pied > label,
+html.papillon-dark body.papillon-pronote .pap-lcn-pied > .Gras {
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-pied textarea.textareamax {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-pied textarea.textareamax:disabled {
+  background: #202926 !important;
+  color: #93a79f !important;
+  -webkit-text-fill-color: #93a79f !important;
+}
+
+/* Carte vide + texte en sombre */
+html.papillon-dark body.papillon-pronote .pap-lcn-empty {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3) !important;
+}
+
+html.papillon-dark body.papillon-pronote .pap-lcn-empty > p {
+  color: #e7efec !important;
+}
+
+/* Checkbox « Uniquement les items évalués » en sombre */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb {
+  border-color: #2a3531 !important;
+  background: #1a211e !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) nav#ligne_bandeau label.iecb:has(input:checked) {
+  background: #14352c !important;
+  border-color: #29947a !important;
+  color: #35bba0 !important;
+}
+
+/* Boutons du second menu en sombre */
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImage,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImageDisable,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .icone-svg {
+  background: #1a211e !important;
+  border-color: #2a3531 !important;
+  color: #e7efec !important;
+}
+
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .btnImage:not(.btnImageDisable):hover,
+html.papillon-dark body.papillon-pronote .interface_affV:has(.pap-lcn) .menu-commandes .icone-svg:hover {
+  background: #14352c !important;
+  border-color: #29947a !important;
+  color: #35bba0 !important;
+}
