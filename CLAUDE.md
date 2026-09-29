@@ -174,7 +174,26 @@ content/pronote/Compétences/Livret de compétences numériques/  Page « Compé
                            l'oublier, sinon le cycle réapparaît). ⚠ La textarea du
                            pied est désactivée (`:disabled`) : la styler, JAMAIS la
                            réveiller. Classes `pap-lcn-*`. Fichiers en ASCII
-                           (`livretnumerique.js` / `.css`).
+                            (`livretnumerique.js` / `.css`).
+content/pronote/Compétences/Anciens bilans/  Page « Compétences → Anciens bilans »
+                           (fil d'Ariane STRICTEMENT « Anciens bilans ») : l'ARBRE des
+                           bilans périodiques publiés (année `aria-level=1` avec
+                           chevron de dépliage, puis un bilan par trimestre
+                           `aria-level=2`) en carte Papillon, au max-width 64rem
+                           centré. Titre « Anciens bilans » INJECTÉ par le JS
+                           (PRONOTE n'affiche aucun titre visible : le libellé
+                           vit dans un `span.sr-only[id$="_labelListe"]` servant à
+                           l'`aria-labelledby` de la grille `role="tree"`) +
+                           compteur « N bilans », icône `calendar` sur l'année et
+                           `graduation-hat` sur le trimestre, pastille « T1 »… à
+                           droite, chevron teal, `hr.liste_sepligne` masqués.
+                           Classes `pap-anb-*`. Fichiers en ASCII
+                           (`anciensbilans.js` / `.css`).
+                           ⚠ NE PAS CONFONDRE avec « Notes → Bulletins → Anciens
+                           bulletins » (`pap-ab-*`) : pages voisines au DOM très
+                           proche mais jetons distincts (`.pap-anb` ≠ `.pap-ab`, un
+                           sélecteur de classe matche un jeton ENTIER) — ne jamais
+                           raccourcir l'un en l'autre.
 
 
 
@@ -461,7 +480,36 @@ via `:has(input:checked)`, sans jamais toucher au display des trois SVGs interne
   repli des colonnes Évaluations/Niveau crée deux colonnes implicites et une barre
   horizontale) et **jamais** `display:none` (elles donnent la hauteur de défilement) ;
   (c) la fausse barre de PRONOTE (`.liste_cont_btnscroll` > `._vertical_*` >
-  `.real-scroll`, 8×7319px) est masquée au profit du vrai défilement de `#…_Zone_1`.
+   `.real-scroll`, 8×7319px) est masquée au profit du vrai défilement de `#…_Zone_1`.
+- `Compétences/Anciens bilans` : ancre **égalité stricte** sur
+  `aria-label="Anciens bilans"`, classes `pap-anb-*`, **jamais** `pap-ab-*` (ni aucun
+  autre jeton Compétences/Notes). Les treize ancres restent mutuellement exclusives ; ne
+  **pas** élargir l'ancre en regex ni en préfixe commun « Ancien… » avec « Anciens
+  bulletins », sinon les deux pages « d'archives » se marquent en même temps.
+  ⚠ **Même famille de DOM que `Notes → Anciens bulletins`** (`.ObjetListe`
+  `DonneesListe_BIA`, `role="tree"`, lignes `.fd_ligne[data-colonne]`, `hr.liste_sepligne`
+  entre les lignes, sr-only `_labelListe` en fin de liste) : la recette de mise en page
+  d'`anciensbulletins.css` s'applique telle quelle. Les largeurs figées diffèrent
+  (`max-width:45rem` sur le wrapper, 450px sur `.liste_btnentete`/`.liste_zone`, 433px sur
+  la grille, 432px sur `.liste_contenu_cellule_contenu`, `height:847px` sur le viewport
+  `#…_Zone_1`) → même correction (`width:auto` sur toute la chaîne, `max-height:
+  var(--pap-anb-h)` + `overflow:auto` sur le viewport, `minmax(0,1fr)` sur la grille).
+  ⚠ Ici le wrapper `max-width:45rem` EST un enfant direct du `<main>` (contrairement à
+  `Anciens bulletins`, où il peut être imbriqué) : le sélecteur `> div[style*="max-width"]`
+  suffit, la variante `:has(.pap-anb-list)` est gardée en filet. La carte garde sa
+  hauteur native (contenu) et non la hauteur de l'écran, comme sur la page voisine :
+  l'arbre ne compte qu'une année + ses trimestres, une carte pleine hauteur serait vide.
+  ⚠ Les lignes enfant (trimestre) n'ont **pas** de `.zone-centrale` : le libellé est
+  directement dans `.liste_contenu_ligne` sous `.zone-principale`, alors que l'année
+  passe par `.zone-centrale > .zone-contenu-format > .zone-principale`. Cibler les
+  trois maillons à plat (comme le fait la feuille) couvre les deux formes.
+  ⚠ Le troisième menu est `<nav id="ligne_bandeau">` **vide** et `display:none` inline :
+  `header.css:260` (`nav…:not(:has(*))`) le masque déjà, ne pas ajouter de règle
+  contraire. Les deux boutons du second menu (Enregistrer, PDF) sont des
+  `<i class="btnImageDisable btnImage">` **désactivés** sur le DOM fourni
+  (`aria-disabled="true"` + infobulle « Aucun PDF pour cet affichage ») : les styler en
+  pastilles fantômes estompées, **jamais** les réveiller. La pop-up de dépôt du PDF
+  (si un jour le bouton redevient actif) n'est pas traitée : DOM inconnu.
 - ⚠ **Ne jamais réécrire `textContent` d'un noeud injecté à chaque `processAll()`** (titre,
   compteur, pastille de trimestre) : l'observateur `body`/`childList` se redéclenche sur
   l'écriture, qui en provoque une autre, etc. → boucle infinie qui gèle l'onglet. Toujours
@@ -691,3 +739,22 @@ via `:has(input:checked)`, sans jamais toucher au display des trois SVGs interne
     masquée, et que la bande de filtres est collée au second menu. Thème Clair ↔ Sombre.
 
 
+18. Sur `Compétences → Anciens bilans` : la page doit afficher une seule carte
+    **centrée** (largeur plafonnée à 64rem, marges latérales égales) avec le titre
+    injecté « Anciens bilans », un compteur (« 3 bilans ») et le bouton de recherche
+    sur une seule ligne ; les lignes de l'arbre en pastilles arrondies avec leur icône
+    `calendar` (année) / `graduation-hat` (trimestre), une pastille « T1 »… à droite,
+    le chevron de dépliage visible en teal, aucun `hr` visible, et rien qui ne déborde
+    sous le bord bas de l'écran. La carte doit garder sa hauteur de CONTENU (ne pas
+    chercher à la remplir : l'arbre ne compte qu'une année + ses trimestres). Déplier
+    l'année puis la replier, rechercher (aucun doublon d'icône), sélectionner un
+    trimestre (ligne teintée), et ouvrir la recherche plusieurs fois — pas de doublon,
+    pas de perte d'icône. Thème Clair ↔ Sombre.
+    Test de fuite : enchaîner `Livret de compétences numériques` → `Anciens bilans`
+    → `Notes → Bulletins → Anciens bulletins` 2 fois ; en console, `main` ne doit porter
+    qu'UN seul marqueur de page (`pap-lcn` OU `pap-anb` OU `pap-ab`), le `.ObjetListe` qu'un
+    seul `pap-anb-list` (avec un unique `.pap-anb-title` et `.pap-anb-count`), et plus aucun
+    `pap-anb-*` après être reparti sur une autre page. Vérifier que les deux boutons du
+    second menu sont en pastilles fantômes (désactivés), que « Consultation temporaire »
+    reste masquée, que le troisième menu vide n'apparaît pas, et que la bande de filtres
+    (absente) ne laisse pas de fente sous le second menu.
